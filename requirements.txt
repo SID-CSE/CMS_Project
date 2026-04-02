@@ -1,0 +1,11 @@
+Node.js
+npm
+
+Dependencies:
+react
+react-dom
+react-router-dom
+axios
+tailwindcss
+@tailwindcss/vite
+vite
