@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  --talent-blue: #1734a1;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optional: Add a nice font if you want it to look extra pro */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
