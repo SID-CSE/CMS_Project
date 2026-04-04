@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { getDashboardPathForRole, loginMockUser } from '../../services/mockAuthService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -8,22 +8,18 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setError('');
 
-    try {
-      const response = await axios.post('http://localhost:8080/miniproject/api/login', {
-        username: email,
-        password: password
-      });
+    const result = loginMockUser({ email, password });
 
-      if (response.data.status === 'success') {
-        navigate('/dashboard'); 
-      }
-    } catch (err) { 
-      setError('Invalid User');
+    if (!result.ok) {
+      setError(result.message || 'Invalid User');
+      return;
     }
+
+    navigate(getDashboardPathForRole(result.user.role));
   };
 
   return (
