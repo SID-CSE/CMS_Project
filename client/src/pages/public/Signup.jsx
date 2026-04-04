@@ -1,9 +1,45 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { registerMockUser } from '../../services/mockAuthService';
 
 const Signup= () => {
   const { roleName } = useParams();
   const navigate = useNavigate();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const displayRole = useMemo(() => {
+    return roleName || localStorage.getItem('selectedRole') || 'Creator';
+  }, [roleName]);
+
+  useEffect(() => {
+    if (roleName) {
+      localStorage.setItem('selectedRole', roleName.toLowerCase());
+    }
+  }, [roleName]);
+
+  const handleSignup = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const result = registerMockUser({
+      firstName,
+      lastName,
+      email,
+      password,
+      role: displayRole,
+    });
+
+    if (!result.ok) {
+      setError(result.message || 'Signup failed.');
+      return;
+    }
+
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0f2ff] via-[#f0f9ff] to-white flex flex-col items-center px-6 py-12">
@@ -13,15 +49,49 @@ const Signup= () => {
 
       <div className="bg-[#dcf0fb] border border-white rounded-[40px] p-10 w-full max-w-md shadow-lg flex flex-col items-center">
         <h2 className="text-[#1734a1] text-4xl font-bold mb-1">SignUp</h2>
-        <p className="text-[#1734a1] text-xl font-semibold mb-8">Welcome {roleName}</p>
+        <p className="text-[#1734a1] text-xl font-semibold mb-8">Welcome {displayRole}</p>
 
-        <form className="w-full space-y-4" onSubmit={(e) => e.preventDefault()}>
-          <div className="flex gap-4">
-            <input type="text" placeholder="First name" className="w-1/2 bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none" />
-            <input type="text" placeholder="Last name" className="w-1/2 bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none" />
+        {error && (
+          <div className="mb-4 p-3 w-full text-center bg-red-100 border border-red-400 text-red-700 rounded-full font-bold text-sm">
+            {error}
           </div>
-          <input type="email" placeholder="Email" className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none" />
-          <input type="password" placeholder="Password" className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none" />
+        )}
+
+        <form className="w-full space-y-4" onSubmit={handleSignup}>
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              className="w-1/2 bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-1/2 bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+          </div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={4}
+            className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
+          />
 
           <button className="w-full bg-[#1734a1] text-white py-3 rounded-full font-bold text-lg mt-4 hover:bg-blue-800 transition shadow-md">
             Sign up

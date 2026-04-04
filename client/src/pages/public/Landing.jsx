@@ -143,7 +143,6 @@ const Landing = () => {
   );
 };
 
-// Updated FeatureCard to support Images
 const FeatureCard = ({ image, title, desc }) => (
   <div className="bg-white/80 p-8 rounded-[40px] border border-blue-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all flex flex-col items-center text-center group">
     <div className="w-32 h-32 mb-6 flex items-center justify-center bg-blue-50 rounded-full group-hover:scale-110 transition-transform">
