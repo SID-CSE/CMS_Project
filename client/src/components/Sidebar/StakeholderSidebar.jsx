@@ -3,8 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 
 const mainItems = [
   { label: "Home", to: "/stakeholder/home" },
-  { label: "Project view", to: "/stakeholder/projects/pj-101" },
-  { label: "Content viewer", to: "/stakeholder/content/ct-501" },
+  { label: "Create request", to: "/stakeholder/create-project-request" },
+  { label: "Project view", to: "/stakeholder/home" },
+  { label: "Content viewer", to: "/stakeholder/content" },
   { label: "Notifications", to: "/stakeholder/notifications" },
   { label: "Messages", to: "/stakeholder/messages" },
   { label: "Profile", to: "/stakeholder/profile" },

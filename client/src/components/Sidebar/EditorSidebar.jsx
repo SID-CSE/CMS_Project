@@ -4,9 +4,9 @@ import { Link, useLocation } from "react-router-dom";
 const mainItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Projects", to: "/projects" },
-  { label: "Project content", to: "/projects/pj-101/content" },
-  { label: "Content viewer", to: "/content/ct-501/view" },
-  { label: "Version history", to: "/content/ct-501/versions" },
+  { label: "Project content", to: "/projects" },
+  { label: "Content viewer", to: "/editor/content" },
+  { label: "Version history", to: "/editor/content" },
   { label: "Notifications", to: "/notifications" },
   { label: "Messages", to: "/editor/messages" },
   { label: "Profile", to: "/editor/profile" },

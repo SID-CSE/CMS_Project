@@ -1,25 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDashboardPathForRole, loginMockUser } from '../../services/mockAuthService';
+import { useAuth } from '../../context/AuthContext';
+import { getDashboardPathForRole } from '../../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
 
-    const result = loginMockUser({ email, password });
+    const result = await login(email, password);
 
     if (!result.ok) {
       setError(result.message || 'Invalid User');
+      setSubmitting(false);
       return;
     }
 
     navigate(getDashboardPathForRole(result.user.role));
+    setSubmitting(false);
   };
 
   return (
@@ -55,8 +61,8 @@ const Login = () => {
             required
             className="w-full bg-white/60 border border-blue-300 rounded-full py-3 px-6 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-500"
           />
-          <button type="submit" className="w-full bg-[#1734a1] text-white py-3 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition-colors">
-            Login →
+          <button disabled={submitting} type="submit" className="w-full bg-[#1734a1] text-white py-3 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition-colors disabled:opacity-50">
+            {submitting ? 'Logging in...' : 'Login →'}
           </button>
         </form>
 
