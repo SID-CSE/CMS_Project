@@ -1,17 +1,35 @@
 # dependencies
 node_modules/
+client/node_modules/
 
 # build files
 dist/
 build/
+client/dist/
+client/dist-ssr/
+server/target/
+out/
 
 # environment files
 .env
+.env.*
+!.env.example
+!.env.sample
+
+# secrets and local credentials
+Credentials.txt
+*.pem
+*.key
+*.p12
+*.jks
 
 # logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+*.log
+logs/
 
 # OS files
 .DS_Store
@@ -19,3 +37,8 @@ Thumbs.db
 
 # editor files
 .vscode/
+.idea/
+.metadata/
+
+# local package manager artifacts
+package-lock.json

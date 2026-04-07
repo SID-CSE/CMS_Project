@@ -1,16 +1,95 @@
-# React + Vite
+# Contify CMS Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the React + Vite frontend for Contify CMS.
 
-Currently, two official plugins are available:
+It provides role-based UI flows for:
+- Stakeholder
+- Admin
+- Editor
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Status
 
-## React Compiler
+This module is under active development.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Core workflow pages and integrations are implemented, with more polish and features planned.
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React 19
+- Vite
+- React Router
+- Tailwind CSS
+
+## Implemented Features
+
+### Authentication UI
+- Login and Signup pages
+- Role-based redirect after login
+- JWT token usage through shared API client
+
+### Stakeholder
+- Create project request
+- View project status
+- Review proposal
+- Accept proposal or request changes
+- Sign off final delivery
+
+### Admin
+- View incoming requests
+- Open project detail
+- Create proposal and send to stakeholder
+- Create tasks and assign editors
+- Review editor submissions
+
+### Editor
+- View assigned tasks
+- Submit task deliverables
+- Track task status updates
+
+### Shared UI
+- Role-specific dashboards
+- Profile/messages/notifications sections
+- Sidebar/navbar based modular layout
+
+## Run Locally
+
+From the client folder:
+
+```bash
+npm install
+npm run dev
+```
+
+Frontend runs on:
+- http://localhost:5173
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## API Configuration
+
+The frontend calls backend APIs using:
+- `VITE_API_URL` if provided
+- fallback: `http://localhost:9090/api`
+
+Set `VITE_API_URL` in a `.env` file if needed:
+
+```env
+VITE_API_URL=http://localhost:9090/api
+```
+
+## Key Route Groups
+
+- Public: `/`, `/login`, `/roles`, `/signup/:roleName`
+- Admin: `/admin/*`
+- Editor: `/editor/*`, `/projects/*`
+- Stakeholder: `/stakeholder/*`
+
+## Notes
+
+- The frontend expects the backend server to be running.
+- Some legacy routes are preserved as aliases for compatibility.

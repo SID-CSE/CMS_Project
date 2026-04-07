@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootApplication
 @RestController
@@ -16,14 +18,21 @@ public class ServerApplication {
 
 	@CrossOrigin
 	@GetMapping("/")
-	public String root() {
-		return "Server is running";
+	public Map<String, String> root() {
+		Map<String, String> response = new HashMap<>();
+		response.put("message", "Contify CMS Backend Server is running");
+		response.put("version", "1.0.0");
+		response.put("status", "OK");
+		return response;
 	}
 
 	@CrossOrigin
-	@GetMapping("/home")
-	public String home(){
-		return "Hello World";
+	@GetMapping("/health")
+	public Map<String, String> health(){
+		Map<String, String> response = new HashMap<>();
+		response.put("status", "UP");
+		response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+		return response;
 	}
 
 }

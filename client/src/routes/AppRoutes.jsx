@@ -47,6 +47,7 @@ import StakeholderProjectView from "../pages/stakeholder/StakeholderProjectView"
 import StakeholderContentViewer from "../pages/stakeholder/StakeholderContentViewer";
 import StakeholderNotifications from "../pages/stakeholder/StakeholderNotifications";
 import StakeholderStreaming from "../pages/stakeholder/StakeholderStreaming";
+import CreateProjectRequest from "../pages/stakeholder/CreateProjectRequest";
 import EditorStreaming from "../pages/editor/EditorStreaming";
 
 function normalizeRole(value) {
@@ -107,6 +108,8 @@ export default function AppRoutes() {
       <Route path="/stakeholder/content/:id" element={<StakeholderContentViewer />} />
       <Route path="/stakeholder/notifications" element={<StakeholderNotifications />} />
       <Route path="/stakeholder/streaming" element={<StakeholderStreaming />} />
+        <Route path="/stakeholder/create-project-request" element={<CreateProjectRequest />} />
+        <Route path="/stakeholder/create-request" element={<Navigate to="/stakeholder/create-project-request" replace />} />
 
       {/* Legacy aliases */}
       <Route path="/editor" element={<Navigate to="/editor/dashboard" replace />} />

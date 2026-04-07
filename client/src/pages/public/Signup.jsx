@@ -1,15 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { registerMockUser } from '../../services/mockAuthService';
+import { useAuth } from '../../context/AuthContext';
 
 const Signup= () => {
   const { roleName } = useParams();
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const displayRole = useMemo(() => {
     return roleName || localStorage.getItem('selectedRole') || 'Creator';
@@ -21,24 +24,27 @@ const Signup= () => {
     }
   }, [roleName]);
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
 
-    const result = registerMockUser({
-      firstName,
-      lastName,
+    const result = await register(
       email,
+      username,
+      `${firstName} ${lastName}`.trim(),
+      displayRole,
       password,
-      role: displayRole,
-    });
+    );
 
     if (!result.ok) {
       setError(result.message || 'Signup failed.');
+      setSubmitting(false);
       return;
     }
 
     navigate('/login');
+    setSubmitting(false);
   };
 
   return (
@@ -76,6 +82,14 @@ const Signup= () => {
             />
           </div>
           <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
+          />
+          <input
             type="email"
             placeholder="Email"
             value={email}
@@ -93,8 +107,8 @@ const Signup= () => {
             className="w-full bg-white/60 border border-blue-300 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-400 outline-none"
           />
 
-          <button className="w-full bg-[#1734a1] text-white py-3 rounded-full font-bold text-lg mt-4 hover:bg-blue-800 transition shadow-md">
-            Sign up
+          <button disabled={submitting} className="w-full bg-[#1734a1] text-white py-3 rounded-full font-bold text-lg mt-4 hover:bg-blue-800 transition shadow-md disabled:opacity-50">
+            {submitting ? 'Creating account...' : 'Sign up'}
           </button>
         </form>
 

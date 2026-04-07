@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 const mainItems = [
   { label: "Dashboard", to: "/admin/dashboard" },
   { label: "Projects", to: "/admin/projects" },
-  { label: "Project detail", to: "/admin/projects/pj-101" },
+  { label: "Project detail", to: "/admin/projects" },
   { label: "Messages", to: "/admin/messages" },
   { label: "Analytics", to: "/admin/analytics" },
   { label: "Audit log", to: "/admin/audit-log" },
