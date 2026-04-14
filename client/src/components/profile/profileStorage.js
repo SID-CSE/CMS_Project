@@ -1,37 +1,26 @@
+import apiClient from "../../services/apiClient";
 import { roleProfileConfig } from "./roleProfileConfig";
 
-function safeJsonParse(value) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-export function readRoleProfile(roleKey) {
+function normalizeProfile(roleKey, profile) {
   const config = roleProfileConfig[roleKey];
-  if (!config) return null;
-
-  const raw = localStorage.getItem(config.storageKey);
-  const parsed = raw ? safeJsonParse(raw) : null;
+  if (!config) return profile || null;
 
   return {
     ...config.defaultProfile,
-    ...(parsed || {}),
+    ...(profile || {}),
   };
 }
 
-export function saveRoleProfile(roleKey, profile) {
-  const config = roleProfileConfig[roleKey];
-  if (!config) return;
+export async function loadRoleProfile(roleKey) {
+  const response = await apiClient.get("/users/me");
+  const payload = response?.data || response;
+  return normalizeProfile(roleKey, payload);
+}
 
-  const payload = {
-    ...config.defaultProfile,
-    ...profile,
-    updatedAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem(config.storageKey, JSON.stringify(payload));
+export async function saveRoleProfile(roleKey, profile) {
+  const response = await apiClient.patch("/users/me", profile);
+  const payload = response?.data || response;
+  return normalizeProfile(roleKey, payload);
 }
 
 export function profileIsEmpty(profile, defaultProfile) {
@@ -55,3 +44,5 @@ export function initialsFromProfile(profile) {
 
   return "CF";
 }
+
+export { normalizeProfile };

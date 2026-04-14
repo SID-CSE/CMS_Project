@@ -38,9 +38,9 @@ const RoleSelection = () => {
   const roles = [
     {
       image: "https://illustrations.popsy.co/blue/video-call.svg",
-      role: "Creator",
+      role: "Editor",
       description: "Build your portfolio and find exciting projects.",
-      buttonText: "Sign up as Creator"
+      buttonText: "Sign up as Editor"
     },
     {
       image: "https://img.freepik.com/premium-vector/flat-design-illustration-female-admin-receiving-call-from-customer_608297-23864.jpg",

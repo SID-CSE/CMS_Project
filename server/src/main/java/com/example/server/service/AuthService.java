@@ -1,5 +1,9 @@
 package com.example.server.service;
 
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.server.dto.AuthLoginDTO;
 import com.example.server.dto.AuthRegisterDTO;
 import com.example.server.dto.AuthResponseDTO;
@@ -8,9 +12,6 @@ import com.example.server.entity.User;
 import com.example.server.repository.UserRepository;
 import com.example.server.security.CustomUserDetailsService;
 import com.example.server.security.JwtService;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
@@ -92,6 +93,10 @@ public class AuthService {
         String normalized = (roleValue == null ? "" : roleValue.trim()).toUpperCase();
         if ("CREATOR".equals(normalized)) {
             normalized = "EDITOR";
+        } else if ("MANAGER".equals(normalized)) {
+            normalized = "ADMIN";
+        } else if ("CLIENT".equals(normalized)) {
+            normalized = "STAKEHOLDER";
         }
 
         try {

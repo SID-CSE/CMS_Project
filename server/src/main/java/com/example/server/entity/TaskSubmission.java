@@ -38,11 +38,26 @@ public class TaskSubmission {
     @Column(name = "version_number")
     private Integer versionNumber = 1;
 
+    @Column(name = "status")
+    private String status = "SUBMITTED";
+
+    @Column(name = "stakeholder_visible")
+    private boolean stakeholderVisible = false;
+
     @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
     @Column(name = "admin_review_note", columnDefinition = "LONGTEXT")
     private String adminReviewNote;
+
+    @Column(name = "stakeholder_rating")
+    private Integer stakeholderRating;
+
+    @Column(name = "stakeholder_review", columnDefinition = "LONGTEXT")
+    private String stakeholderReview;
+
+    @Column(name = "stakeholder_reviewed_at")
+    private LocalDateTime stakeholderReviewedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -137,6 +152,22 @@ public class TaskSubmission {
         this.versionNumber = versionNumber;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isStakeholderVisible() {
+        return stakeholderVisible;
+    }
+
+    public void setStakeholderVisible(boolean stakeholderVisible) {
+        this.stakeholderVisible = stakeholderVisible;
+    }
+
     public LocalDateTime getSubmittedAt() {
         return submittedAt;
     }
@@ -153,6 +184,30 @@ public class TaskSubmission {
         this.adminReviewNote = adminReviewNote;
     }
 
+    public Integer getStakeholderRating() {
+        return stakeholderRating;
+    }
+
+    public void setStakeholderRating(Integer stakeholderRating) {
+        this.stakeholderRating = stakeholderRating;
+    }
+
+    public String getStakeholderReview() {
+        return stakeholderReview;
+    }
+
+    public void setStakeholderReview(String stakeholderReview) {
+        this.stakeholderReview = stakeholderReview;
+    }
+
+    public LocalDateTime getStakeholderReviewedAt() {
+        return stakeholderReviewedAt;
+    }
+
+    public void setStakeholderReviewedAt(LocalDateTime stakeholderReviewedAt) {
+        this.stakeholderReviewedAt = stakeholderReviewedAt;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -166,5 +221,8 @@ public class TaskSubmission {
         this.id = UUID.randomUUID().toString();
         this.submittedAt = LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = "SUBMITTED";
+        }
     }
 }

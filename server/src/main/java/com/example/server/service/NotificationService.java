@@ -1,12 +1,15 @@
 package com.example.server.service;
 
-import com.example.server.entity.Notification;
-import com.example.server.repository.NotificationRepository;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
+
+import com.example.server.entity.Notification;
+import com.example.server.entity.User;
+import com.example.server.repository.NotificationRepository;
 
 @Service
 public class NotificationService {
@@ -49,5 +52,17 @@ public class NotificationService {
         List<Notification> notifications = notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId, false);
         notifications.forEach(n -> n.setIsRead(true));
         notificationRepository.saveAll(notifications);
+    }
+
+    @Transactional
+    public Notification createNotification(String userId, User user, String type, String title, String message, String relatedEntityId) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setUser(user);
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setRelatedEntityId(relatedEntityId);
+        return notificationRepository.save(notification);
     }
 }

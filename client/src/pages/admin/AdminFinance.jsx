@@ -4,16 +4,29 @@ import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import RoleFinancePage from "../../components/finance/RoleFinancePage";
 import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest } from "../../services/financeService";
 
+const EMPTY_STATE = {
+  stats: { total_spent: "₹0", pending: "₹0", last_payment: "₹0" },
+  transactions: [],
+  requests: [],
+  expenses: [],
+  counterparties: [],
+};
+
 export default function AdminFinance() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [state, setState] = useState(getFinanceState("admin"));
+  const [state, setState] = useState(EMPTY_STATE);
+
+  const loadState = async () => {
+    const next = await getFinanceState("admin");
+    setState(next || EMPTY_STATE);
+  };
 
   useEffect(() => {
-    setState(getFinanceState("admin"));
+    loadState();
   }, []);
 
-  const sync = (nextState) => {
-    saveFinanceState("admin", nextState);
+  const sync = async (nextState) => {
+    await saveFinanceState("admin", nextState);
     setState(nextState);
   };
 
@@ -31,9 +44,9 @@ export default function AdminFinance() {
             counterparties={state.counterparties || []}
             primaryActionLabel="Create Transaction"
             primaryActionHint="Create a payment or invoice between admin and editors/stakeholders."
-            onCreateTransaction={(transaction) => sync(createFinanceTransaction("admin", transaction))}
-            onUpdateRequest={(requestId, patch) => sync(updateFinanceRequest("admin", requestId, patch))}
-            onRecordAction={(transactionId, patch) => sync(recordFinanceAction("admin", transactionId, patch))}
+            onCreateTransaction={async (transaction) => sync(await createFinanceTransaction("admin", transaction))}
+            onUpdateRequest={async (requestId, patch) => sync(await updateFinanceRequest("admin", requestId, patch))}
+            onRecordAction={async (transactionId, patch) => sync(await recordFinanceAction("admin", transactionId, patch))}
           />
         </div>
       </main>

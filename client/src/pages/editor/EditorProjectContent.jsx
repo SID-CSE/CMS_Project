@@ -4,6 +4,7 @@ import EditorNavbar from "../../components/Navbar/EditorNavbar";
 import EditorSidebar from "../../components/Sidebar/EditorSidebar";
 import { useAuth } from "../../context/AuthContext";
 import projectService from "../../services/projectService";
+import EditorUpload from "../../components/content/EditorUpload";
 
 export default function EditorProjectContent() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -15,6 +16,9 @@ export default function EditorProjectContent() {
   const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState("");
   const [submissionInputs, setSubmissionInputs] = React.useState({});
+  const [selectedTaskId, setSelectedTaskId] = React.useState("");
+  const rows = tasks.filter((task) => task.projectId === id);
+  const filtered = statusFilter === "All" ? rows : rows.filter((task) => task.status === statusFilter);
 
   React.useEffect(() => {
     const loadTasks = async () => {
@@ -33,8 +37,14 @@ export default function EditorProjectContent() {
     }
   }, [userId]);
 
-  const rows = tasks.filter((task) => task.projectId === id);
-  const filtered = statusFilter === "All" ? rows : rows.filter((task) => task.status === statusFilter);
+  React.useEffect(() => {
+    if (!selectedTaskId && rows.length > 0) {
+      setSelectedTaskId(rows[0].id);
+    }
+    if (rows.length === 0) {
+      setSelectedTaskId("");
+    }
+  }, [selectedTaskId, rows]);
 
   const handleSubmitWork = async (taskId) => {
     setMessage("");
@@ -150,6 +160,46 @@ export default function EditorProjectContent() {
               </tbody>
             </table>
           </div>
+
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Cloud Upload Submit</h2>
+            <p className="mt-1 text-sm text-slate-500">Upload media to Cloudinary and submit directly to the selected task.</p>
+
+            <div className="mt-4 grid gap-3">
+              <label className="block max-w-sm">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Task</span>
+                <select
+                  value={selectedTaskId}
+                  onChange={(e) => setSelectedTaskId(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
+                >
+                  {rows.length === 0 ? (
+                    <option value="">No tasks in this project</option>
+                  ) : (
+                    rows.map((task) => (
+                      <option key={task.id} value={task.id}>
+                        {task.title} ({task.status})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+
+              {selectedTaskId ? (
+                <EditorUpload
+                  taskId={selectedTaskId}
+                  onSubmitted={async () => {
+                    const refresh = await projectService.getEditorTasks(userId);
+                    if (refresh.ok) {
+                      setTasks(refresh.data || []);
+                      setMessage("Task submitted successfully.");
+                      setError("");
+                    }
+                  }}
+                />
+              ) : null}
+            </div>
+          </section>
         </div>
       </main>
     </div>

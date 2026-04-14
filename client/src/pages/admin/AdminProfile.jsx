@@ -1,16 +1,30 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminNavbar from "../../components/Navbar/AdminNavbar";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import ProfileLayout from "../../components/profile/ProfileLayout";
 import RoleProfileView from "../../components/profile/RoleProfileView";
 import { roleProfileConfig } from "../../components/profile/roleProfileConfig";
-import { readRoleProfile } from "../../components/profile/profileStorage";
+import { loadRoleProfile } from "../../components/profile/profileStorage";
 
 export default function AdminProfile() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const config = roleProfileConfig.admin;
-  const profile = readRoleProfile("admin");
+  const [profile, setProfile] = useState(config.defaultProfile);
+
+  useEffect(() => {
+    let active = true;
+    loadRoleProfile("admin")
+      .then((nextProfile) => {
+        if (active) setProfile(nextProfile);
+      })
+      .catch(() => {
+        if (active) setProfile(config.defaultProfile);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [config.defaultProfile]);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">

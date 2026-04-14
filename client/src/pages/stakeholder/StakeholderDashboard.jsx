@@ -1,52 +1,45 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import RoleDashboardView from "../../components/dashboard/RoleDashboardView";
-
-const stats = [
-  { title: "Approved Assets", value: "46", note: "Ready for campaign use" },
-  { title: "Awaiting Approval", value: "6", note: "Pending final sign-off" },
-  { title: "Published This Month", value: "31", note: "Across all channels" },
-  { title: "Engagement Lift", value: "+18%", note: "Compared to last month" },
-];
-
-const sideSections = [
-  {
-    id: "approval-queue",
-    title: "Approval Queue",
-    items: [
-      "Pricing page copy refresh • Medium risk",
-      "Channel partner brochure • Low risk",
-      "Security update bulletin • High risk",
-    ],
-    emptyText: "No pending approvals.",
-  },
-  {
-    id: "team-consumption",
-    title: "Team Consumption",
-    items: [
-      "Marketing • 14 approved assets",
-      "Sales • 9 approved assets",
-      "Customer success • 11 approved assets",
-    ],
-    emptyText: "No team insights available.",
-  },
-];
-
-const activitySection = {
-  title: "Recent Activity",
-  items: [
-    "Launch landing page approved and published",
-    "3 assets moved to final review",
-    "Stakeholder comments resolved on case study",
-    "Monthly performance summary generated",
-  ],
-  emptyText: "No recent activity.",
-};
+import { authService } from "../../services/authService";
+import { getStakeholderDashboardData } from "../../services/workflowService";
 
 export default function StakeholderDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    stats: [],
+    sideSections: [],
+    activitySection: { title: "Recent Activity", items: [], emptyText: "No recent activity." },
+    trend: { labels: [], values: [] },
+    lastUpdated: null,
+    hasPartialData: false,
+  });
+
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getStakeholderDashboardData(authService.getUserId());
+      setDashboardData(data);
+    } catch {
+      setDashboardData({
+        stats: [],
+        sideSections: [],
+        activitySection: { title: "Recent Activity", items: [], emptyText: "No recent activity." },
+        trend: { labels: [], values: [] },
+        lastUpdated: null,
+        hasPartialData: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -61,14 +54,19 @@ export default function StakeholderDashboard() {
             subtitle="Review approvals, monitor content impact, and guide publishing priorities."
             primaryAction={{ label: "View Content Library", to: "/stakeholder/content" }}
             secondaryAction={{ label: "Open Messages", to: "/stakeholder/messages" }}
-            stats={stats}
+            stats={dashboardData.stats}
             mainSection={{
               id: "approval-overview",
               title: "Approval Performance",
               subtitle: "Approval and publishing trend over the last 30 days",
             }}
-            sideSections={sideSections}
-            activitySection={activitySection}
+            sideSections={dashboardData.sideSections}
+            activitySection={dashboardData.activitySection}
+            hasPartialData={dashboardData.hasPartialData}
+            trend={dashboardData.trend}
+            lastUpdated={dashboardData.lastUpdated}
+            isLoading={isLoading}
+            onRefresh={loadDashboard}
           />
         </div>
       </main>

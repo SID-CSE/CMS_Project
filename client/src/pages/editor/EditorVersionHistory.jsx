@@ -7,12 +7,6 @@ export default function EditorVersionHistory() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const { id } = useParams();
 
-  const versions = [
-    { id: "v5", label: "Current", note: "Headline rewritten, CTA updated" },
-    { id: "v4", label: "Previous", note: "Visual sequence adjusted" },
-    { id: "v3", label: "Initial review", note: "Comments from admin added" },
-  ];
-
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <EditorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -27,18 +21,11 @@ export default function EditorVersionHistory() {
           <section className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Side-by-side Diff</h2>
-              <div className="mt-3 h-96 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Version A vs Version B diff canvas</div>
+              <div className="mt-3 h-96 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Version diff API is not available yet for this content.</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Available Versions</h2>
-              <div className="mt-3 space-y-2">
-                {versions.map((version) => (
-                  <div key={version.id} className="rounded-xl bg-slate-50 p-3">
-                    <p className="font-medium text-slate-900">{version.id} • {version.label}</p>
-                    <p className="mt-1 text-sm text-slate-600">{version.note}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-3 text-sm text-slate-500">No version history entries are currently exposed by backend APIs.</p>
             </div>
           </section>
         </div>

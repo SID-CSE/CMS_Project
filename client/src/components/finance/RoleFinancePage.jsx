@@ -79,6 +79,7 @@ export default function RoleFinancePage({
   primaryActionLabel,
   primaryActionHint,
   counterparties = [],
+  allowCreate = true,
 }) {
   const [selectedCounterparty, setSelectedCounterparty] = useState(counterparties[0]?.email || "");
   const [amount, setAmount] = useState("");
@@ -100,9 +101,10 @@ export default function RoleFinancePage({
     ];
   }, [stats, requests, primaryActionHint]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    if (!allowCreate) return;
     if (!amount || !selectedCounterparty) return;
-    onCreateTransaction?.({
+    await onCreateTransaction?.({
       to: selectedCounterparty,
       amount: Number(amount),
       description: description || primaryActionLabel,
@@ -132,6 +134,7 @@ export default function RoleFinancePage({
             <button
               type="button"
               onClick={handleCreate}
+              disabled={!allowCreate}
               className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               <span className="mr-2">{icons.plus}</span>
@@ -228,19 +231,19 @@ export default function RoleFinancePage({
                     <Badge tone={request.status === "paid" ? "emerald" : "amber"}>{request.status}</Badge>
                   </div>
                   <div className="mt-3 flex gap-2">
-                    {request.status === "pending" && roleKey !== "editor" && (
+                    {request.status === "pending" && roleKey === "admin" && (
                       <button
                         type="button"
-                        onClick={() => onUpdateRequest?.(request.id, { status: "paid" })}
+                        onClick={async () => onUpdateRequest?.(request.id, { status: "paid" })}
                         className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white"
                       >
-                        Mark Paid
+                        Distribute
                       </button>
                     )}
                     {request.status === "pending" && roleKey === "stakeholder" && (
                       <button
                         type="button"
-                        onClick={() => onRecordAction?.(request.id, { status: "paid" })}
+                        onClick={async () => onUpdateRequest?.(request.id, { status: "paid" })}
                         className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white"
                       >
                         Pay Now

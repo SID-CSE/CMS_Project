@@ -4,16 +4,29 @@ import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import RoleFinancePage from "../../components/finance/RoleFinancePage";
 import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest } from "../../services/financeService";
 
+const EMPTY_STATE = {
+  stats: { total_spent: "₹0", pending: "₹0", last_payment: "₹0" },
+  transactions: [],
+  requests: [],
+  expenses: [],
+  counterparties: [],
+};
+
 export default function StakeholderFinance() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [state, setState] = useState(getFinanceState("stakeholder"));
+  const [state, setState] = useState(EMPTY_STATE);
+
+  const loadState = async () => {
+    const next = await getFinanceState("stakeholder");
+    setState(next || EMPTY_STATE);
+  };
 
   useEffect(() => {
-    setState(getFinanceState("stakeholder"));
+    loadState();
   }, []);
 
-  const sync = (nextState) => {
-    saveFinanceState("stakeholder", nextState);
+  const sync = async (nextState) => {
+    await saveFinanceState("stakeholder", nextState);
     setState(nextState);
   };
 
@@ -31,9 +44,10 @@ export default function StakeholderFinance() {
             counterparties={state.counterparties || []}
             primaryActionLabel="Pay Request"
             primaryActionHint="Pay admin requests directly or record a direct payment for approval."
-            onCreateTransaction={(transaction) => sync(createFinanceTransaction("stakeholder", transaction))}
-            onUpdateRequest={(requestId, patch) => sync(updateFinanceRequest("stakeholder", requestId, patch))}
-            onRecordAction={(transactionId, patch) => sync(recordFinanceAction("stakeholder", transactionId, patch))}
+            onCreateTransaction={async (transaction) => sync(await createFinanceTransaction("stakeholder", transaction))}
+            onUpdateRequest={async (requestId, patch) => sync(await updateFinanceRequest("stakeholder", requestId, patch))}
+            onRecordAction={async (transactionId, patch) => sync(await recordFinanceAction("stakeholder", transactionId, patch))}
+            allowCreate={false}
           />
         </div>
       </main>

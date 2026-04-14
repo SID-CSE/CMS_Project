@@ -2,10 +2,10 @@ import apiClient from './apiClient';
 
 // Helper to normalize roles
 function normalizeRole(roleValue) {
-  const role = (roleValue || '').toString().trim().toUpperCase();
-  if (role === 'STAKEHOLDER' || role === 'ADMIN' || role === 'EDITOR') {
-    return role;
-  }
+  const role = (roleValue || '').toString().trim().toLowerCase();
+  if (role === 'stakeholder') return 'STAKEHOLDER';
+  if (role === 'admin') return 'ADMIN';
+  if (role === 'editor') return 'EDITOR';
   return 'EDITOR';
 }
 
@@ -23,6 +23,12 @@ function getDashboardPathForRole(role) {
   return '/editor/dashboard';
 }
 
+const CURRENT_USER_KEY = 'contify_current_user';
+
+function getAuthToken() {
+  return localStorage.getItem('authToken');
+}
+
 // Store user session
 function setCurrentUser(user) {
   if (user) {
@@ -30,7 +36,8 @@ function setCurrentUser(user) {
     localStorage.setItem('userId', user.id);
     localStorage.setItem('userRole', user.role);
     localStorage.setItem('userEmail', user.email);
-    localStorage.setItem('username', user.username || '');
+    localStorage.setItem('username', user.username || user.name || '');
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
   }
 }
 
@@ -41,10 +48,14 @@ function clearUserSession() {
   localStorage.removeItem('userEmail');
   localStorage.removeItem('username');
   localStorage.removeItem('authToken');
+  localStorage.removeItem(CURRENT_USER_KEY);
 }
 
 function getCurrentUser() {
-  const raw = localStorage.getItem('currentUser');
+  const token = getAuthToken();
+  if (!token) return null;
+
+  const raw = localStorage.getItem(CURRENT_USER_KEY) || localStorage.getItem('currentUser');
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -58,20 +69,22 @@ export const authService = {
   async register({ email, username, name, role, password = 'default123' }) {
     try {
       const response = await apiClient.post('/auth/register', {
-        email,
-        username,
-        name,
+        email: (email || '').trim().toLowerCase(),
+        username: (username || '').trim(),
+        name: (name || username || '').trim(),
         role: normalizeRole(role),
         password,
       });
 
       const payload = response.data;
-      setCurrentUser(payload.user);
-      localStorage.setItem('authToken', payload.token);
+      if (payload?.token) {
+        localStorage.setItem('authToken', payload.token);
+      }
+      setCurrentUser(payload?.user);
 
       return {
         ok: true,
-        user: payload.user,
+        user: payload?.user,
       };
     } catch (error) {
       return {
@@ -84,17 +97,19 @@ export const authService = {
   async login({ email, password }) {
     try {
       const response = await apiClient.post('/auth/login', {
-        email,
+        email: (email || '').trim().toLowerCase(),
         password,
       });
 
       const payload = response.data;
-      setCurrentUser(payload.user);
-      localStorage.setItem('authToken', payload.token);
+      if (payload?.token) {
+        localStorage.setItem('authToken', payload.token);
+      }
+      setCurrentUser(payload?.user);
 
       return {
         ok: true,
-        user: payload.user,
+        user: payload?.user,
       };
     } catch (error) {
       return {

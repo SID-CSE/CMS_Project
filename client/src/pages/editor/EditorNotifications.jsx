@@ -1,10 +1,27 @@
 import React from "react";
 import EditorNavbar from "../../components/Navbar/EditorNavbar";
 import EditorSidebar from "../../components/Sidebar/EditorSidebar";
-import { editorNotifications } from "../../data/workflowData";
+import { authService } from "../../services/authService";
+import { getNotifications } from "../../services/workflowService";
 
 export default function EditorNotifications() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [notifications, setNotifications] = React.useState([]);
+
+  React.useEffect(() => {
+    let active = true;
+    getNotifications(authService.getUserId())
+      .then((nextNotifications) => {
+        if (active) setNotifications(nextNotifications);
+      })
+      .catch(() => {
+        if (active) setNotifications([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -19,9 +36,13 @@ export default function EditorNotifications() {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="space-y-2">
-              {editorNotifications.map((note) => (
-                <div key={note} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">{note}</div>
+              {notifications.map((note) => (
+                <div key={note.id} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <div className="font-medium text-slate-900">{note.title || note.type}</div>
+                  <div className="mt-1 text-slate-600">{note.message}</div>
+                </div>
               ))}
+              {!notifications.length ? <p className="text-sm text-slate-500">No notifications yet.</p> : null}
             </div>
           </section>
         </div>

@@ -4,6 +4,7 @@ import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import { useAuth } from "../../context/AuthContext";
 import projectService from "../../services/projectService";
+import CloudMediaViewer from "../../components/media/CloudMediaViewer";
 
 export default function StakeholderProjectView() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -55,6 +56,7 @@ export default function StakeholderProjectView() {
 
   const canSignOff = project?.status === "DELIVERED";
   const canReviewProposal = project?.status === "PLAN_SENT";
+  const latestPreview = tasks.find((task) => task.latestSubmission?.cdnUrl)?.latestSubmission;
 
   const handleAcceptPlan = async () => {
     setMessage("");
@@ -170,6 +172,17 @@ export default function StakeholderProjectView() {
 
           {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
           {message && <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{message}</div>}
+
+          {latestPreview?.cdnUrl ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-slate-900">Latest Submission Preview</h2>
+              <CloudMediaViewer
+                mediaUrl={latestPreview.cdnUrl}
+                fileType={latestPreview.fileType}
+                title="Latest submitted media"
+              />
+            </section>
+          ) : null}
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-slate-200">

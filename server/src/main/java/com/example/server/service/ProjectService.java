@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +29,7 @@ public class ProjectService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final CloudinaryMediaService cloudinaryMediaService;
 
     // Constructor
     public ProjectService(ProjectRequestRepository projectRequestRepository,
@@ -35,7 +39,8 @@ public class ProjectService {
                           TaskSubmissionRepository taskSubmissionRepository,
                           NotificationRepository notificationRepository,
                           UserRepository userRepository,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          CloudinaryMediaService cloudinaryMediaService) {
         this.projectRequestRepository = projectRequestRepository;
         this.projectPlanRepository = projectPlanRepository;
         this.planMilestoneRepository = planMilestoneRepository;
@@ -44,6 +49,7 @@ public class ProjectService {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.cloudinaryMediaService = cloudinaryMediaService;
     }
 
     // ===== STAGE 1: STAKEHOLDER POSTS PROJECT REQUEST =====
@@ -331,6 +337,128 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
+    // ===== COMPATIBILITY METHODS FOR LEGACY TASK CONTROLLERS =====
+    public List<TaskResponseDTO> getAllAdminTasks() {
+        return taskRepository.findAll().stream()
+                .sorted(Comparator.comparing(Task::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .map(this::mapTaskToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<TaskSubmissionSummaryDTO> getTaskSubmissions(String taskId) {
+        taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        return taskSubmissionRepository.findByTaskId(taskId).stream()
+                .sorted(Comparator.comparing(TaskSubmission::getVersionNumber, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .map(this::mapSubmissionSummary)
+                .collect(Collectors.toList());
+    }
+
+    public TaskStreamUrlResponseDTO getAdminSubmissionMediaUrl(String submissionId, String adminId) {
+        validateAdmin(adminId);
+
+        TaskSubmission submission = taskSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found with id: " + submissionId));
+
+        return buildStreamResponse(submission);
+    }
+
+    public TaskStreamUrlResponseDTO getAdminStreamUrl(String taskId, String adminId) {
+        validateAdmin(adminId);
+
+        taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        TaskSubmission submission = taskSubmissionRepository.findFirstByTaskIdOrderByVersionNumberDesc(taskId)
+                .orElseThrow(() -> new RuntimeException("No submission found for task: " + taskId));
+
+        return buildStreamResponse(submission);
+    }
+
+    public TaskStreamUrlResponseDTO getStakeholderStreamUrl(String taskId, String stakeholderId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        ProjectRequest project = task.getProject();
+        if (project == null || !project.getClientId().equals(stakeholderId)) {
+            throw new RuntimeException("Unauthorized: You are not the stakeholder for this task");
+        }
+
+        TaskSubmission submission = taskSubmissionRepository
+            .findFirstByTaskIdAndStakeholderVisibleTrueOrderByVersionNumberDesc(taskId)
+            .orElseThrow(() -> new RuntimeException("No stakeholder-visible submission found for task: " + taskId));
+
+        return buildStreamResponse(submission);
+    }
+
+    public TaskResponseDTO approveTask(String taskId, String adminId) {
+        User admin = validateAdmin(adminId);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        task.setStatus(Task.TaskStatus.APPROVED);
+        Task savedTask = taskRepository.save(task);
+
+        taskSubmissionRepository.findFirstByTaskIdOrderByVersionNumberDesc(taskId)
+                .ifPresent(submission -> {
+                    String note = submission.getAdminReviewNote();
+                    if (note == null || note.isBlank()) {
+                        submission.setAdminReviewNote("Approved by admin: " + admin.getUsername());
+                    }
+                    submission.setStatus("APPROVED");
+                    submission.setStakeholderVisible(false);
+                    taskSubmissionRepository.save(submission);
+                });
+
+        markProjectDeliveredIfComplete(savedTask.getProjectId());
+        notifyEditorTaskReviewed(savedTask);
+        return mapTaskToResponseDTO(savedTask);
+    }
+
+    public TaskResponseDTO holdTask(String taskId, String adminId) {
+        validateAdmin(adminId);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        task.setStatus(Task.TaskStatus.NEEDS_REVISION);
+        task.setAdminFeedback("Placed on hold for revision by admin");
+        Task savedTask = taskRepository.save(task);
+
+        taskSubmissionRepository.findFirstByTaskIdOrderByVersionNumberDesc(taskId)
+                .ifPresent(submission -> {
+                    submission.setAdminReviewNote("On hold: revision requested");
+                    submission.setStatus("ON_HOLD");
+                    submission.setStakeholderVisible(false);
+                    taskSubmissionRepository.save(submission);
+                });
+
+        notifyEditorTaskReviewed(savedTask);
+        return mapTaskToResponseDTO(savedTask);
+    }
+
+    public TaskResponseDTO forwardTaskToStakeholder(String taskId, String adminId) {
+        validateAdmin(adminId);
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        if (task.getStatus() != Task.TaskStatus.APPROVED) {
+            throw new RuntimeException("Task must be APPROVED before it can be forwarded");
+        }
+
+        TaskSubmission submission = taskSubmissionRepository.findFirstByTaskIdOrderByVersionNumberDesc(taskId)
+                .orElseThrow(() -> new RuntimeException("No submission found for task: " + taskId));
+
+        submission.setStatus("FORWARDED");
+        submission.setStakeholderVisible(true);
+        taskSubmissionRepository.save(submission);
+
+        markProjectDeliveredIfComplete(task.getProjectId());
+        return mapTaskToResponseDTO(task);
+    }
+
     // ===== STAGE 5: EDITOR SUBMITS WORK =====
     @Transactional
     public TaskResponseDTO submitTask(String taskId, String editorId, SubmitTaskDTO dto) {
@@ -354,6 +482,8 @@ public class ProjectService {
         submission.setFileType(dto.getFileType());
         submission.setS3Key(dto.getS3Key());
         submission.setVersionNumber(nextVersion);
+        submission.setStatus("SUBMITTED");
+        submission.setStakeholderVisible(false);
 
         taskSubmissionRepository.save(submission);
 
@@ -383,11 +513,15 @@ public class ProjectService {
         if ("APPROVE".equals(action)) {
             task.setStatus(Task.TaskStatus.APPROVED);
             latestSubmission.setAdminReviewNote(dto.getFeedback());
+            latestSubmission.setStatus("APPROVED");
+            latestSubmission.setStakeholderVisible(false);
             taskSubmissionRepository.save(latestSubmission);
         } else if ("REQUEST_REVISION".equals(action) || "REVISION".equals(action)) {
             task.setStatus(Task.TaskStatus.NEEDS_REVISION);
             task.setAdminFeedback(dto.getFeedback());
             latestSubmission.setAdminReviewNote(dto.getFeedback());
+            latestSubmission.setStatus("REVISION_REQUESTED");
+            latestSubmission.setStakeholderVisible(false);
             taskSubmissionRepository.save(latestSubmission);
 
             ProjectRequest project = task.getProject();
@@ -407,7 +541,7 @@ public class ProjectService {
 
     // ===== STAGE 7: STAKEHOLDER SIGNS OFF =====
     @Transactional
-    public ProjectRequestResponseDTO signOffDelivery(String projectId, String clientId) {
+    public ProjectRequestResponseDTO signOffDelivery(String projectId, String clientId, ProjectCompletionFeedbackDTO dto) {
         ProjectRequest project = projectRequestRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
 
@@ -415,30 +549,59 @@ public class ProjectService {
             throw new RuntimeException("Unauthorized: You are not the client for this project");
         }
 
-        if (project.getStatus() != ProjectRequest.ProjectStatus.DELIVERED) {
-            throw new RuntimeException("Project must be in DELIVERED state before sign-off");
+        if (!areAllTasksApproved(projectId)) {
+            throw new RuntimeException("Project can be signed off only after every task is approved");
         }
 
+        project.setStakeholderRating(dto.getRating());
+        project.setStakeholderFeedback(dto.getFeedback());
+        project.setStakeholderReviewedAt(LocalDateTime.now());
         project.setStatus(ProjectRequest.ProjectStatus.SIGNED_OFF);
         ProjectRequest savedProject = projectRequestRepository.save(project);
         notifyAdminProjectSignedOff(savedProject);
         return mapToResponseDTO(savedProject);
     }
 
-    private void markProjectDeliveredIfComplete(String projectId) {
-        List<Task> tasks = taskRepository.findByProjectId(projectId);
-        if (tasks.isEmpty()) {
-            return;
+    @Transactional
+    public TaskResponseDTO reviewTaskByStakeholder(String taskId, String clientId, StakeholderTaskReviewDTO dto) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+
+        ProjectRequest project = projectRequestRepository.findById(task.getProjectId())
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + task.getProjectId()));
+
+        if (!project.getClientId().equals(clientId)) {
+            throw new RuntimeException("Unauthorized: You are not the client for this task");
         }
 
-        boolean allApproved = tasks.stream().allMatch(task -> task.getStatus() == Task.TaskStatus.APPROVED);
-        if (allApproved) {
+        TaskSubmission submission = taskSubmissionRepository
+                .findFirstByTaskIdAndStakeholderVisibleTrueOrderByVersionNumberDesc(taskId)
+                .orElseThrow(() -> new RuntimeException("No stakeholder-visible submission found for task"));
+
+        submission.setStakeholderRating(dto.getRating());
+        submission.setStakeholderReview(dto.getReview());
+        submission.setStakeholderReviewedAt(LocalDateTime.now());
+        taskSubmissionRepository.save(submission);
+
+        return mapTaskToResponseDTO(task);
+    }
+
+    private void markProjectDeliveredIfComplete(String projectId) {
+        if (areAllTasksApproved(projectId)) {
             ProjectRequest project = projectRequestRepository.findById(projectId)
                     .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
-            project.setStatus(ProjectRequest.ProjectStatus.DELIVERED);
-            projectRequestRepository.save(project);
-            notifyStakeholderDeliveryReady(project);
+            if (project.getStatus() != ProjectRequest.ProjectStatus.DELIVERED
+                    && project.getStatus() != ProjectRequest.ProjectStatus.SIGNED_OFF) {
+                project.setStatus(ProjectRequest.ProjectStatus.DELIVERED);
+                projectRequestRepository.save(project);
+                notifyStakeholderDeliveryReady(project);
+            }
         }
+    }
+
+    private boolean areAllTasksApproved(String projectId) {
+        List<Task> tasks = taskRepository.findByProjectId(projectId);
+        return !tasks.isEmpty() && tasks.stream().allMatch(task -> task.getStatus() == Task.TaskStatus.APPROVED);
     }
 
     // ===== HELPER: MAP ENTITY TO DTO =====
@@ -449,6 +612,9 @@ public class ProjectService {
         dto.setDescription(project.getDescription());
         dto.setDeadline(project.getDeadline());
         dto.setStatus(project.getStatus().toString());
+        dto.setStakeholderRating(project.getStakeholderRating());
+        dto.setStakeholderFeedback(project.getStakeholderFeedback());
+        dto.setStakeholderReviewedAt(project.getStakeholderReviewedAt());
         dto.setCreatedAt(project.getCreatedAt());
         dto.setUpdatedAt(project.getUpdatedAt());
 
@@ -523,6 +689,10 @@ public class ProjectService {
         TaskResponseDTO dto = new TaskResponseDTO();
         dto.setId(task.getId());
         dto.setProjectId(task.getProjectId());
+        if (task.getProject() != null) {
+            dto.setProjectTitle(task.getProject().getTitle());
+            dto.setProjectStatus(task.getProject().getStatus().name());
+        }
         dto.setTitle(task.getTitle());
         dto.setDescription(task.getDescription());
         dto.setContentType(task.getContentType().name());
@@ -546,15 +716,102 @@ public class ProjectService {
                 .ifPresent(submission -> {
                     TaskResponseDTO.SubmissionSummaryDTO s = new TaskResponseDTO.SubmissionSummaryDTO();
                     s.setId(submission.getId());
+                    s.setStatus(submission.getStatus());
+                    s.setStakeholderVisible(submission.isStakeholderVisible());
                     s.setCdnUrl(submission.getCdnUrl());
                     s.setFileType(submission.getFileType());
                     s.setVersionNumber(submission.getVersionNumber());
                     s.setSubmittedAt(submission.getSubmittedAt());
                     s.setAdminReviewNote(submission.getAdminReviewNote());
+                    s.setStakeholderRating(submission.getStakeholderRating());
+                    s.setStakeholderReview(submission.getStakeholderReview());
+                    s.setStakeholderReviewedAt(submission.getStakeholderReviewedAt());
                     dto.setLatestSubmission(s);
                 });
 
         return dto;
+    }
+
+    private TaskSubmissionSummaryDTO mapSubmissionSummary(TaskSubmission submission) {
+        TaskSubmissionSummaryDTO dto = new TaskSubmissionSummaryDTO();
+        dto.setId(submission.getId());
+        dto.setTaskId(submission.getTaskId());
+        dto.setPublicId(submission.getS3Key());
+        dto.setFileType(submission.getFileType());
+        dto.setVersionNumber(submission.getVersionNumber());
+        dto.setStatus(submission.getAdminReviewNote() == null || submission.getAdminReviewNote().isBlank() ? "PENDING" : "REVIEWED");
+        dto.setStakeholderVisible(isStakeholderVisible(submission));
+        dto.setSubmittedAt(submission.getSubmittedAt());
+        dto.setAdminReviewNote(submission.getAdminReviewNote());
+        dto.setMediaUrl(submission.getCdnUrl());
+        return dto;
+    }
+
+    private TaskStreamUrlResponseDTO buildStreamResponse(TaskSubmission submission) {
+        TaskStreamUrlResponseDTO response = new TaskStreamUrlResponseDTO();
+        response.setTaskId(submission.getTaskId());
+        response.setPublicId(submission.getS3Key());
+
+        String streamUrl;
+        try {
+            streamUrl = cloudinaryMediaService.buildSignedStreamUrl(submission);
+        } catch (Exception ex) {
+            streamUrl = submission.getCdnUrl();
+        }
+
+        if (streamUrl == null || streamUrl.isBlank()) {
+            throw new RuntimeException("No media URL available for this submission");
+        }
+
+        response.setStreamUrl(streamUrl);
+        Instant expiry = cloudinaryMediaService.streamUrlExpiry();
+        response.setExpiresAt(expiry);
+        return response;
+    }
+
+    private boolean isStakeholderVisible(TaskSubmission submission) {
+        if (submission.getTask() == null || submission.getTask().getStatus() == null) {
+            return false;
+        }
+        return submission.getTask().getStatus() == Task.TaskStatus.APPROVED;
+    }
+
+    private User validateAdmin(String adminId) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found with id: " + adminId));
+        if (admin.getRole() != User.UserRole.ADMIN) {
+            throw new RuntimeException("Only admins can perform this action");
+        }
+        return admin;
+    }
+
+    @Transactional
+    public ProjectRequestResponseDTO updateProjectStatus(String projectId, String newStatus, String adminId) {
+        validateAdmin(adminId);
+        ProjectRequest project = projectRequestRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+
+        try {
+            ProjectRequest.ProjectStatus status = ProjectRequest.ProjectStatus.valueOf(newStatus.toUpperCase());
+            if (status == ProjectRequest.ProjectStatus.DELIVERED && !areAllTasksApproved(projectId)) {
+                throw new RuntimeException("Project cannot be marked DELIVERED until every task is approved");
+            }
+            project.setStatus(status);
+            ProjectRequest updated = projectRequestRepository.save(project);
+            return mapToResponseDTO(updated);
+        } catch (IllegalArgumentException e) {
+            String valid = Arrays.stream(ProjectRequest.ProjectStatus.values())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+            throw new RuntimeException("Invalid status: " + newStatus + ". Valid statuses are: " + valid);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectRequestResponseDTO> getAllProjects() {
+        return projectRequestRepository.findAll().stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
     }
 
     // ===== NOTIFICATION HELPERS =====
