@@ -99,30 +99,61 @@ function summarizeTrendFromProjects(projects) {
 }
 
 export async function getAdminDashboardData(userId) {
-  const [requestsSettled, tasksSettled, activitySettled] = await Promise.allSettled([
+  const [projectsSettled, requestsSettled, tasksSettled, activitySettled] = await Promise.allSettled([
+    projectService.getAllProjects(),
     projectService.getNewProjectRequests(),
     apiClient.get("/admin/tasks"),
     getActivityEntries(userId),
   ]);
 
+  const projects = projectsSettled.status === "fulfilled" && projectsSettled.value.ok ? projectsSettled.value.data || [] : [];
   const requests = requestsSettled.status === "fulfilled" && requestsSettled.value.ok ? requestsSettled.value.data || [] : [];
   const tasks = tasksSettled.status === "fulfilled" ? unwrapList(tasksSettled.value) : [];
   const activity = activitySettled.status === "fulfilled" ? activitySettled.value : [];
+
+  const tasksByProject = tasks.reduce((acc, task) => {
+    const key = task.projectId || "unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(task);
+    return acc;
+  }, {});
+
+  const activeProjects = projects.filter((project) => {
+    const status = (project?.status || "").toString().toUpperCase();
+    return status !== "DELIVERED" && status !== "SIGNED_OFF";
+  });
+
   const stats = buildStats(tasks);
   // Show partial warning only when core dashboard sources fail.
   const hasPartialData =
+    projectsSettled.status !== "fulfilled" ||
+    (projectsSettled.status === "fulfilled" && !projectsSettled.value.ok) ||
     requestsSettled.status !== "fulfilled" ||
     tasksSettled.status !== "fulfilled" ||
     (requestsSettled.status === "fulfilled" && !requestsSettled.value.ok);
 
   return {
     stats: [
-      { title: "Active Tasks", value: String(stats.total), note: "Across all projects" },
+      { title: "Active Projects", value: String(activeProjects.length), note: "Currently in-flight" },
       { title: "Pending Reviews", value: String(stats.inReview), note: "Submitted and waiting" },
       { title: "Approved", value: String(stats.approved), note: "Completed approvals" },
       { title: "New Requests", value: String(requests.length), note: "Awaiting planning" },
     ],
     sideSections: [
+      {
+        id: "projects-tasks",
+        title: "Projects & Tasks",
+        items: activeProjects.slice(0, 5).map((project) => {
+          const projectTasks = tasksByProject[project.id] || [];
+          const taskPreview = projectTasks.slice(0, 2).map((task) => task.title || "Untitled task").join(", ");
+          if (!projectTasks.length) {
+            return `${project.title || "Untitled project"} • 0 tasks`;
+          }
+          const suffix = projectTasks.length > 2 ? ` +${projectTasks.length - 2} more` : "";
+          return `${project.title || "Untitled project"} • ${projectTasks.length} tasks: ${taskPreview}${suffix}`;
+        }),
+        emptyText: "No active projects.",
+      },
       {
         id: "review-queue",
         title: "Review Queue",
@@ -145,8 +176,8 @@ export async function getAdminDashboardData(userId) {
       emptyText: "No recent activity.",
     },
     trend: {
-      labels: ["Assigned", "Submitted", "Revision", "Approved", "Total"],
-      values: summarizeTrendFromTasks(tasks),
+      labels: ["Requested", "In Progress", "Revision", "Delivered", "Signed Off"],
+      values: summarizeTrendFromProjects(projects),
     },
     lastUpdated: new Date().toISOString(),
     hasPartialData,
@@ -201,23 +232,37 @@ export async function getEditorDashboardData(userId) {
 }
 
 export async function getStakeholderDashboardData(userId) {
-  const [projectsSettled, notificationsSettled] = await Promise.allSettled([
+  const [projectsSettled, notificationsSettled, inboxSettled, financeSettled] = await Promise.allSettled([
     projectService.getClientProjects(userId),
     getNotifications(userId),
+    apiClient.get("/messages/inbox"),
+    apiClient.get("/stakeholder/finance/requests"),
   ]);
 
   const projects = projectsSettled.status === "fulfilled" && projectsSettled.value.ok ? projectsSettled.value.data || [] : [];
   const notifications = notificationsSettled.status === "fulfilled" ? notificationsSettled.value : [];
+  const inboxThreads = inboxSettled.status === "fulfilled" ? unwrapList(inboxSettled.value) : [];
+  const financeRequests = financeSettled.status === "fulfilled" ? unwrapList(financeSettled.value) : [];
+
+  const pendingFinance = financeRequests.filter((request) => {
+    const status = (request?.status || "").toString().toUpperCase();
+    return status === "SENT" || status === "PAID";
+  }).length;
   const approved = projects.filter((project) => project.status === "DELIVERED" || project.status === "SIGNED_OFF").length;
-  // Notifications are optional for dashboard health and should not trigger partial warning.
-  const hasPartialData = projectsSettled.status !== "fulfilled" || (projectsSettled.status === "fulfilled" && !projectsSettled.value.ok);
+  const inProgress = projects.filter((project) => project.status === "IN_PROGRESS").length;
+  const hasPartialData =
+    projectsSettled.status !== "fulfilled" ||
+    (projectsSettled.status === "fulfilled" && !projectsSettled.value.ok) ||
+    notificationsSettled.status !== "fulfilled" ||
+    inboxSettled.status !== "fulfilled" ||
+    financeSettled.status !== "fulfilled";
 
   return {
     stats: [
       { title: "Total Projects", value: String(projects.length), note: "Projects under your account" },
-      { title: "Ready for Review", value: String(projects.filter((project) => project.status === "IN_PROGRESS").length), note: "In active delivery" },
+      { title: "Ready for Review", value: String(inProgress), note: "In active delivery" },
       { title: "Delivered", value: String(approved), note: "Approved and completed" },
-      { title: "Notifications", value: String(notifications.length), note: "Latest updates" },
+      { title: "Finance Actions", value: String(pendingFinance), note: "Requests awaiting action" },
     ],
     sideSections: [
       {
@@ -227,15 +272,24 @@ export async function getStakeholderDashboardData(userId) {
         emptyText: "No projects found.",
       },
       {
-        id: "alerts",
-        title: "Approval Alerts",
-        items: notifications.slice(0, 5).map((note) => note.message || note.title || "Notification"),
-        emptyText: "No pending alerts.",
+        id: "inbox",
+        title: "Message Inbox",
+        items: inboxThreads.slice(0, 5).map((thread) => `${thread.counterpart?.name || "Conversation"} • ${(thread.projectTitle || "General")} • ${Number(thread.unreadCount || 0)} unread`),
+        emptyText: "No active conversations.",
+      },
+      {
+        id: "finance",
+        title: "Finance Requests",
+        items: financeRequests.slice(0, 5).map((request) => `${request.projectTitle || "Project"} • ${request.status || "SENT"}`),
+        emptyText: "No finance requests.",
       },
     ],
     activitySection: {
       title: "Recent Activity",
-      items: notifications.slice(0, 8).map((note) => note.message || note.title || "Notification"),
+      items: [
+        ...notifications.slice(0, 6).map((note) => note.message || note.title || "Notification"),
+        ...inboxThreads.slice(0, 2).map((thread) => `Message update: ${thread.counterpart?.name || "Conversation"}`),
+      ].slice(0, 8),
       emptyText: "No recent activity.",
     },
     trend: {

@@ -49,7 +49,6 @@ export const roleNavigationConfig = {
       {
         title: "Account",
         items: [
-          { label: "Profile", to: "/admin/profile", matchPrefixes: ["/admin/profile"] },
           { label: "Finance", to: "/admin/finance", matchPrefixes: ["/admin/finance"] },
         ],
       },
@@ -80,7 +79,6 @@ export const roleNavigationConfig = {
           { label: "Dashboard", to: "/editor/dashboard", matchPrefixes: ["/editor/dashboard", "/dashboard"] },
           { label: "Projects", to: "/projects", matchPrefixes: ["/projects"] },
           { label: "My content", to: "/editor/content", matchPrefixes: ["/editor/content"] },
-          { label: "Notifications", to: "/notifications", matchPrefixes: ["/notifications"] },
         ],
       },
       {
@@ -88,7 +86,6 @@ export const roleNavigationConfig = {
         items: [
           { label: "Streaming", to: "/editor/streaming", matchPrefixes: ["/editor/streaming"] },
           { label: "Messages", to: "/editor/messages", matchPrefixes: ["/editor/messages"] },
-          { label: "Profile", to: "/editor/profile", matchPrefixes: ["/editor/profile"] },
           { label: "Finance", to: "/editor/finance", matchPrefixes: ["/editor/finance"] },
         ],
       },
@@ -126,10 +123,8 @@ export const roleNavigationConfig = {
       {
         title: "Communication",
         items: [
-          { label: "Notifications", to: "/stakeholder/notifications", matchPrefixes: ["/stakeholder/notifications"] },
           { label: "Messages", to: "/stakeholder/messages", matchPrefixes: ["/stakeholder/messages"] },
           { label: "Streaming", to: "/stakeholder/streaming", matchPrefixes: ["/stakeholder/streaming"] },
-          { label: "Profile", to: "/stakeholder/profile", matchPrefixes: ["/stakeholder/profile"] },
           { label: "Finance", to: "/stakeholder/finance", matchPrefixes: ["/stakeholder/finance"] },
         ],
       },

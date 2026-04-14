@@ -82,6 +82,8 @@ public class AuthService {
         summary.setEmail(user.getEmail());
         summary.setUsername(user.getUsername());
         summary.setRole(user.getRole().name());
+        summary.setProfileImage(user.getProfileImage());
+        summary.setTeam(user.getTeam());
 
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);

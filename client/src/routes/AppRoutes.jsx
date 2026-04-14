@@ -42,7 +42,6 @@ import StakeholderMessages from "../pages/stakeholder/StakeholderMessages";
 import StakeholderProfile from "../pages/stakeholder/StakeholderProfile";
 import StakeholderProfileEdit from "../pages/stakeholder/StakeholderProfileEdit";
 import StakeholderFinance from "../pages/stakeholder/StakeholderFinance";
-import StakeholderHome from "../pages/stakeholder/StakeholderHome";
 import StakeholderProjects from "../pages/stakeholder/StakeholderProjects";
 import StakeholderProjectView from "../pages/stakeholder/StakeholderProjectView";
 import StakeholderContentViewer from "../pages/stakeholder/StakeholderContentViewer";
@@ -93,7 +92,7 @@ export default function AppRoutes() {
       <Route path="/admin/settings" element={guard(["ADMIN"], <AdminSettings />)} />
       <Route path="/admin/streaming" element={guard(["ADMIN"], <AdminStreaming />)} />
 
-      <Route path="/stakeholder/home" element={guard(["STAKEHOLDER"], <StakeholderHome />)} />
+      <Route path="/stakeholder/home" element={guard(["STAKEHOLDER"], <StakeholderDashboard />)} />
       <Route path="/stakeholder/projects" element={guard(["STAKEHOLDER"], <StakeholderProjects />)} />
       <Route path="/stakeholder/projects/:id" element={guard(["STAKEHOLDER"], <StakeholderProjectView />)} />
       <Route path="/stakeholder/content/:id" element={guard(["STAKEHOLDER"], <StakeholderContentViewer />)} />

@@ -211,6 +211,8 @@ public class MessageService {
         summary.setEmail(user.getEmail());
         summary.setUsername(user.getUsername());
         summary.setRole(user.getRole() == null ? null : user.getRole().name());
+        summary.setProfileImage(user.getProfileImage());
+        summary.setTeam(user.getTeam());
         return summary;
     }
 

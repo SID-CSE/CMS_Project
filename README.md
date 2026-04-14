@@ -4,6 +4,15 @@ Contify CMS is a role-based content management workflow platform built with Reac
 
 It supports a full multi-role process where stakeholders request projects, admins plan and assign work, editors submit deliverables, and stakeholders review final output.
 
+## Documentation Structure
+
+This file is the single source of truth for project-level setup and architecture.
+
+Module-specific quick docs:
+- `client/README.md` (frontend run/build shortcuts)
+- `server/README.md` (backend run/build shortcuts)
+- `server/API_DOCUMENTATION.md` (endpoint reference)
+
 ## Project Status
 
 This project is under active development.
@@ -124,6 +133,12 @@ mvnw spring-boot:run
 ```
 
 Backend runs on http://localhost:9090
+
+## Environment Files Policy
+
+- Use local `.env` files for real credentials.
+- Keep `.env.example` files template-only (no live secrets).
+- Never commit real secrets to git.
 
 ## 2) Database configuration
 

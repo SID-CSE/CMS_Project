@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import UserIdentityLink from "../profile/UserIdentityLink";
 
 const icons = {
   send: (
@@ -92,8 +93,8 @@ export default function RoleMessagesLayout({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px,1fr]">
-      <aside className="overflow-hidden rounded-4xl bg-[#111b21] text-white shadow-2xl ring-1 ring-black/10">
+    <div className="flex flex-col gap-6 lg:flex-row">
+      <aside className="overflow-hidden rounded-4xl bg-[#111b21] text-white shadow-2xl ring-1 ring-black/10 lg:w-[360px] lg:min-w-[340px] xl:w-[390px]">
         <div className="border-b border-white/10 px-5 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -177,9 +178,17 @@ export default function RoleMessagesLayout({
                     active ? "bg-[#202c33] shadow-lg" : "hover:bg-white/6"
                   }`}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-teal-500 text-sm font-semibold text-white">
-                    {avatarFromName(thread.counterpart?.name || thread.projectTitle || "?")}
-                  </div>
+                  {thread.counterpart?.profileImage ? (
+                    <img
+                      src={thread.counterpart.profileImage}
+                      alt={thread.counterpart?.name || "User"}
+                      className="h-12 w-12 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-teal-500 text-sm font-semibold text-white">
+                      {avatarFromName(thread.counterpart?.name || thread.projectTitle || "?")}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -206,7 +215,7 @@ export default function RoleMessagesLayout({
         </div>
       </aside>
 
-      <section className="overflow-hidden rounded-4xl bg-white shadow-2xl ring-1 ring-slate-200">
+      <section className="overflow-hidden rounded-4xl bg-white shadow-2xl ring-1 ring-slate-200 lg:flex-1">
         {!activeThread ? (
           <div className="flex min-h-160 items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_45%),linear-gradient(180deg,#f8fafc_0%,#edf7f3_100%)] p-8 text-center">
             <div className="max-w-md">
@@ -222,11 +231,29 @@ export default function RoleMessagesLayout({
             <header className="border-b border-slate-200 bg-white px-6 py-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-sm font-semibold text-white">
-                    {avatarFromName(activeThread.counterpart?.name || activeThread.projectTitle || "?")}
-                  </div>
+                  {activeThread.counterpart?.profileImage ? (
+                    <img
+                      src={activeThread.counterpart.profileImage}
+                      alt={activeThread.counterpart?.name || "User"}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-sm font-semibold text-white">
+                      {avatarFromName(activeThread.counterpart?.name || activeThread.projectTitle || "?")}
+                    </div>
+                  )}
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">{activeThread.counterpart?.name || activeThread.projectTitle || "Conversation"}</h3>
+                    {activeThread.counterpart?.name ? (
+                      <UserIdentityLink
+                        userId={activeThread.counterpartId}
+                        name={activeThread.counterpart?.name}
+                        role={activeThread.counterpart?.role}
+                        profileImage={activeThread.counterpart?.profileImage}
+                        className="-ml-1"
+                      />
+                    ) : (
+                      <h3 className="text-lg font-semibold text-slate-900">{activeThread.projectTitle || "Conversation"}</h3>
+                    )}
                     <p className="mt-1 text-sm text-slate-500">{activeThread.counterpart?.email || activeThread.counterpart?.role || "Open project discussion"}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {activeThread.projectTitle ? (
