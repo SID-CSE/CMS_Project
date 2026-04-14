@@ -1,9 +1,27 @@
 import React from "react";
 import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
+import { useAuth } from "../../context/AuthContext";
+import TaskStreamPanel from "../../components/media/TaskStreamPanel";
+import projectService from "../../services/projectService";
 
 export default function StakeholderStreaming() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const { userId } = useAuth();
+  const [projects, setProjects] = React.useState([]);
+
+  React.useEffect(() => {
+    const loadProjects = async () => {
+      if (!userId) return;
+      const result = await projectService.getClientProjects(userId);
+      if (result.ok) {
+        setProjects(result.data || []);
+      } else {
+        setProjects([]);
+      }
+    };
+    loadProjects();
+  }, [userId]);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -16,10 +34,13 @@ export default function StakeholderStreaming() {
             <p className="mt-2 text-sm text-slate-500">Watch live stream output and review broadcast status in real time.</p>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 text-sm font-medium text-slate-700">Live Stream Preview</div>
-            <div className="flex h-96 items-center justify-center rounded-xl bg-slate-900 text-slate-100">Stakeholder stream preview canvas</div>
-          </section>
+          <TaskStreamPanel
+            heading="Stakeholder Stream"
+            description="Select project and task to stream stakeholder-visible cloud media."
+            projects={projects}
+            loadTasks={(projectId) => projectService.getStakeholderProjectTasks(projectId, userId)}
+            loadStreamUrl={(taskId) => projectService.getStakeholderTaskStreamUrl(taskId)}
+          />
         </div>
       </main>
     </div>

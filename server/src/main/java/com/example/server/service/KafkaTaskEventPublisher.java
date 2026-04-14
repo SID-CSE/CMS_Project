@@ -50,10 +50,10 @@ public class KafkaTaskEventPublisher implements TaskEventPublisher {
         payload.put("projectId", task.getProjectId());
         payload.put("taskStatus", task.getStatus() == null ? null : task.getStatus().name());
         payload.put("submissionId", submission.getId());
-        payload.put("publicId", submission.getPublicId());
+        payload.put("publicId", submission.getS3Key());
         payload.put("fileType", submission.getFileType());
         payload.put("versionNumber", submission.getVersionNumber());
-        payload.put("stakeholderVisible", submission.isStakeholderVisible());
+        payload.put("stakeholderVisible", task.getStatus() == Task.TaskStatus.APPROVED);
         payload.put("timestamp", Instant.now().toString());
 
         try {

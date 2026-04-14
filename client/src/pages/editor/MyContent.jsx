@@ -2,37 +2,31 @@ import React, { useEffect, useState } from "react";
 import EditorNavbar from "../../components/Navbar/EditorNavbar";
 import EditorSidebar from "../../components/Sidebar/EditorSidebar";
 import ContentKanban from "../../components/content/ContentKanban";
-import { contentRoles, createContentDraft, loadAuditLog, loadContentItems, updateContentStatus } from "../../components/content/contentStorage";
+import { contentRoles, loadAuditLog, loadContentItems } from "../../components/content/contentStorage";
 
 export default function MyContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [items, setItems] = useState(loadContentItems("editor"));
-  const [auditLog, setAuditLog] = useState(loadAuditLog("editor"));
+  const [items, setItems] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
 
   useEffect(() => {
-    setItems(loadContentItems("editor"));
-    setAuditLog(loadAuditLog("editor"));
+    let active = true;
+    Promise.all([loadContentItems("editor"), loadAuditLog("editor")])
+      .then(([nextItems, nextAudit]) => {
+        if (!active) return;
+        setItems(nextItems);
+        setAuditLog(nextAudit);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItems([]);
+        setAuditLog([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
-
-  const handleAdvance = (item) => {
-    const nextStatus = contentRoles.editor.nextStep[item.status];
-    if (!nextStatus) return;
-    const result = updateContentStatus("editor", item.id, nextStatus, "Editor");
-    setItems(result.items);
-    setAuditLog(result.audit);
-  };
-
-  const handleReject = (item) => {
-    const result = updateContentStatus("editor", item.id, "Rejected", "Editor");
-    setItems(result.items);
-    setAuditLog(result.audit);
-  };
-
-  const handleCreateDraft = (draft) => {
-    const nextItems = createContentDraft("editor", draft);
-    setItems(nextItems);
-    setAuditLog(loadAuditLog("editor"));
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -44,9 +38,6 @@ export default function MyContent() {
             roleConfig={contentRoles.editor}
             items={items}
             auditLog={auditLog}
-            onAdvance={handleAdvance}
-            onReject={handleReject}
-            onCreateDraft={handleCreateDraft}
           />
         </div>
       </main>

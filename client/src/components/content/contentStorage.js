@@ -1,152 +1,117 @@
-const STORAGE_KEYS = {
-  admin: "contify_content_admin",
-  editor: "contify_content_editor",
-  stakeholder: "contify_content_stakeholder",
-};
+import apiClient from "../../services/apiClient";
+import { authService } from "../../services/authService";
 
-const AUDIT_KEYS = {
-  admin: "contify_content_audit_admin",
-  editor: "contify_content_audit_editor",
-  stakeholder: "contify_content_audit_stakeholder",
-};
-
-const defaultItems = {
-  admin: [
-    { id: "admin-1", title: "Homepage hero update", owner: "Admin Desk", summary: "Refresh CTA copy and visuals.", status: "Draft", updatedAt: "2026-04-03T08:00:00.000Z" },
-    { id: "admin-2", title: "Editor onboarding guide", owner: "Contify Team", summary: "Document workflow steps for new editors.", status: "In Progress", updatedAt: "2026-04-03T08:20:00.000Z" },
-    { id: "admin-3", title: "Stakeholder approval notes", owner: "Stakeholder Desk", summary: "Collect sign-off on final release.", status: "In Review", updatedAt: "2026-04-03T08:35:00.000Z" },
-    { id: "admin-4", title: "April content calendar", owner: "Admin Desk", summary: "Planned editorial schedule for the month.", status: "Approved", updatedAt: "2026-04-03T08:42:00.000Z" },
-    { id: "admin-5", title: "Archived campaign draft", owner: "Contify Team", summary: "Needs rework before resubmission.", status: "Rejected", updatedAt: "2026-04-03T08:50:00.000Z" },
-  ],
-  editor: [
-    { id: "editor-1", title: "AI trends explainer", owner: "Editor Team", summary: "Initial article draft in progress.", status: "Draft", updatedAt: "2026-04-03T08:00:00.000Z" },
-    { id: "editor-2", title: "Launch page copy", owner: "Editor Team", summary: "Working through copy blocks.", status: "In Progress", updatedAt: "2026-04-03T08:20:00.000Z" },
-    { id: "editor-3", title: "SEO checklist review", owner: "Admin Desk", summary: "Needs editorial and stakeholder review.", status: "In Review", updatedAt: "2026-04-03T08:35:00.000Z" },
-    { id: "editor-4", title: "Newsletter edition", owner: "Contify", summary: "Approved and scheduled.", status: "Approved", updatedAt: "2026-04-03T08:42:00.000Z" },
-    { id: "editor-5", title: "Old blog rewrite", owner: "Editor Team", summary: "Rejected pending restructure.", status: "Rejected", updatedAt: "2026-04-03T08:50:00.000Z" },
-  ],
-  stakeholder: [
-    { id: "stakeholder-1", title: "Product launch approval", owner: "Stakeholder Desk", summary: "Draft waiting for editing.", status: "Draft", updatedAt: "2026-04-03T08:00:00.000Z" },
-    { id: "stakeholder-2", title: "Customer success guide", owner: "Stakeholder Desk", summary: "Preparing content for review.", status: "In Progress", updatedAt: "2026-04-03T08:20:00.000Z" },
-    { id: "stakeholder-3", title: "Quarterly report copy", owner: "Admin Desk", summary: "Ready for final approval.", status: "In Review", updatedAt: "2026-04-03T08:35:00.000Z" },
-    { id: "stakeholder-4", title: "Approved case study", owner: "Contify", summary: "Live and published.", status: "Approved", updatedAt: "2026-04-03T08:42:00.000Z" },
-    { id: "stakeholder-5", title: "Rejected product note", owner: "Stakeholder Desk", summary: "Needs revisions before publish.", status: "Rejected", updatedAt: "2026-04-03T08:50:00.000Z" },
-  ],
-};
-
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+function unwrapList(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
 }
 
-function safeParse(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+function mapStatus(status) {
+  const normalized = (status || "").toString().trim().toUpperCase();
+  if (normalized === "SUBMITTED") return "In Review";
+  if (normalized === "APPROVED") return "Approved";
+  if (normalized === "NEEDS_REVISION" || normalized === "REJECTED") return "Rejected";
+  if (normalized === "IN_PROGRESS") return "In Progress";
+  return "Draft";
+}
+
+function toContentItem(task) {
+  return {
+    id: task.id,
+    title: task.title || "Untitled task",
+    owner: task.assignedEditor?.name || task.assignedEditor?.username || task.projectId || "Unassigned",
+    summary: task.description || task.adminFeedback || task.latestSubmission?.adminReviewNote || "",
+    status: mapStatus(task.status),
+    updatedAt: task.updatedAt || task.createdAt || "",
+    projectId: task.projectId,
+    contentType: task.contentType,
+    latestSubmission: task.latestSubmission || null,
+  };
+}
+
+async function fetchTasksForRole(role, userId) {
+  if (role === "admin") {
+    const response = await apiClient.get("/admin/tasks");
+    return unwrapList(response).map(toContentItem);
   }
+
+  if (role === "editor") {
+    const response = await apiClient.get(`/editor/tasks?editorId=${encodeURIComponent(userId)}`);
+    return unwrapList(response).map(toContentItem);
+  }
+
+  if (role === "stakeholder") {
+    const projectsResponse = await apiClient.get(`/projects/stakeholder?stakeholderId=${encodeURIComponent(userId)}`);
+    const projects = unwrapList(projectsResponse);
+    const taskGroups = await Promise.all(
+      projects.map(async (project) => {
+        const projectId = project.id || project.projectId;
+        if (!projectId) return [];
+        const tasksResponse = await apiClient.get(`/projects/${encodeURIComponent(projectId)}/tasks?stakeholderId=${encodeURIComponent(userId)}`);
+        return unwrapList(tasksResponse).map(toContentItem);
+      })
+    );
+    return taskGroups.flat();
+  }
+
+  return [];
 }
 
-function getKey(role) {
-  return STORAGE_KEYS[role];
-}
+async function fetchAuditEntries(userId) {
+  if (!userId) return [];
 
-function getAuditKey(role) {
-  return AUDIT_KEYS[role];
+  const response = await apiClient.get(`/notifications?userId=${encodeURIComponent(userId)}`);
+  const notifications = unwrapList(response);
+
+  return notifications.map((notification) => ({
+    id: notification.id,
+    itemTitle: notification.title || notification.type || "Notification",
+    message: notification.message || "",
+    timestamp: notification.createdAt || notification.timestamp || "",
+    actor: notification.type || "System",
+    itemId: notification.relatedEntityId || "",
+    previousStatus: null,
+    nextStatus: notification.type || "",
+  }));
 }
 
 export function getInitialContentItems(role) {
-  return clone(defaultItems[role] || []);
+  return [];
 }
 
-export function loadContentItems(role) {
-  const key = getKey(role);
-  const raw = localStorage.getItem(key);
-  if (!raw) {
-    const seed = getInitialContentItems(role);
-    localStorage.setItem(key, JSON.stringify(seed));
-    return seed;
+export async function loadContentItems(role, context = {}) {
+  const userId = context.userId || authService.getUserId();
+  return fetchTasksForRole(role, userId);
+}
+
+export async function loadAuditLog(role, context = {}) {
+  const userId = context.userId || authService.getUserId();
+  return fetchAuditEntries(userId);
+}
+
+export async function updateContentStatus(role, itemId, nextStatus, actorLabel, context = {}) {
+  const userId = context.userId || authService.getUserId();
+
+  if (role !== "admin") {
+    throw new Error("Content transitions are only supported for admins in this workflow");
   }
-  const parsed = safeParse(raw);
-  return Array.isArray(parsed) ? parsed : getInitialContentItems(role);
-}
 
-export function saveContentItems(role, items) {
-  localStorage.setItem(getKey(role), JSON.stringify(items));
-}
-
-export function loadAuditLog(role) {
-  const key = getAuditKey(role);
-  const raw = localStorage.getItem(key);
-  if (!raw) {
-    localStorage.setItem(key, JSON.stringify([]));
-    return [];
+  if (nextStatus === "Approved") {
+    await apiClient.patch(`/admin/tasks/${encodeURIComponent(itemId)}/approve`, {});
+  } else if (nextStatus === "Rejected" || nextStatus === "Needs Revision") {
+    await apiClient.patch(`/admin/tasks/${encodeURIComponent(itemId)}/hold`, {});
+  } else {
+    throw new Error("Unsupported content transition");
   }
-  const parsed = safeParse(raw);
-  return Array.isArray(parsed) ? parsed : [];
+
+  const items = await loadContentItems(role, { userId });
+  const audit = await loadAuditLog(role, { userId });
+  return { items, audit };
 }
 
-export function appendAuditEntry(role, entry) {
-  const current = loadAuditLog(role);
-  const next = [
-    {
-      id: `${role}-audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      timestamp: new Date().toISOString(),
-      ...entry,
-    },
-    ...current,
-  ];
-  localStorage.setItem(getAuditKey(role), JSON.stringify(next));
-  return next;
-}
-
-export function updateContentStatus(role, itemId, nextStatus, actorLabel) {
-  const items = loadContentItems(role);
-  const item = items.find((entry) => entry.id === itemId);
-  if (!item) return { items, audit: loadAuditLog(role) };
-
-  const previousStatus = item.status;
-  const updatedItems = items.map((entry) =>
-    entry.id === itemId
-      ? { ...entry, status: nextStatus, updatedAt: new Date().toISOString() }
-      : entry
-  );
-
-  saveContentItems(role, updatedItems);
-  const audit = appendAuditEntry(role, {
-    itemId,
-    itemTitle: item.title,
-    previousStatus,
-    nextStatus,
-    actor: actorLabel,
-    message: `${item.title} moved from ${previousStatus} to ${nextStatus}`,
-  });
-
-  return { items: updatedItems, audit };
-}
-
-export function createContentDraft(role, draft) {
-  const items = loadContentItems(role);
-  const next = [
-    {
-      id: `${role}-${Date.now()}`,
-      title: draft.title,
-      owner: draft.owner,
-      summary: draft.summary,
-      status: "Draft",
-      updatedAt: new Date().toISOString(),
-    },
-    ...items,
-  ];
-  saveContentItems(role, next);
-  appendAuditEntry(role, {
-    itemId: next[0].id,
-    itemTitle: draft.title,
-    previousStatus: null,
-    nextStatus: "Draft",
-    actor: draft.actor || role,
-    message: `${draft.title} created in Draft`,
-  });
-  return next;
+export async function createContentDraft() {
+  throw new Error("Draft creation is not supported by the current backend workflow");
 }
 
 export const contentRoles = {
@@ -154,8 +119,6 @@ export const contentRoles = {
     roleLabel: "Admin",
     basePath: "/admin/content",
     nextStep: {
-      Draft: "In Progress",
-      "In Progress": "In Review",
       "In Review": "Approved",
     },
     canReject: true,
@@ -165,23 +128,16 @@ export const contentRoles = {
   editor: {
     roleLabel: "Editor",
     basePath: "/editor/content",
-    nextStep: {
-      Draft: "In Progress",
-      "In Progress": "In Review",
-    },
+    nextStep: {},
     canReject: false,
-    canCreate: true,
+    canCreate: false,
     canEditAny: false,
   },
   stakeholder: {
     roleLabel: "Stakeholder",
     basePath: "/stakeholder/content",
-    nextStep: {
-      Draft: "In Progress",
-      "In Progress": "In Review",
-      "In Review": "Approved",
-    },
-    canReject: true,
+    nextStep: {},
+    canReject: false,
     canCreate: false,
     canEditAny: false,
   },

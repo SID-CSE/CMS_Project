@@ -1,15 +1,33 @@
 package com.example.server.controller;
 
-import com.example.server.dto.*;
-import com.example.server.service.ProjectService;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.server.dto.ApiResponse;
+import com.example.server.dto.CreateProjectPlanDTO;
+import com.example.server.dto.CreateTaskDTO;
+import com.example.server.dto.ProjectPlanResponseDTO;
+import com.example.server.dto.ProjectRequestResponseDTO;
+import com.example.server.dto.ReviewTaskSubmissionDTO;
+import com.example.server.dto.TaskResponseDTO;
+import com.example.server.service.ProjectService;
+
 import jakarta.validation.Valid;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -75,18 +93,18 @@ public class AdminProjectController {
         }
     }
 
-    // ===== ADMIN: SEND PLAN TO CLIENT =====
+    // ===== ADMIN: SEND PLAN TO STAKEHOLDER =====
     @PatchMapping("/projects/{projectId}/plan/send")
     public ResponseEntity<ApiResponse<ProjectPlanResponseDTO>> sendPlanToClient(
             @PathVariable String projectId,
             @RequestParam String adminId) {
         
-        log.info("PATCH /api/admin/projects/{}/plan/send - Sending plan to client by admin: {}", projectId, adminId);
+        log.info("PATCH /api/admin/projects/{}/plan/send - Sending plan to stakeholder by admin: {}", projectId, adminId);
         try {
             ProjectPlanResponseDTO result = projectService.sendPlanToClient(projectId, adminId);
-            return ResponseEntity.ok(ApiResponse.success("Plan sent to client successfully", result));
+            return ResponseEntity.ok(ApiResponse.success("Plan sent to stakeholder successfully", result));
         } catch (Exception e) {
-            log.error("Error sending plan to client: {}", e.getMessage());
+            log.error("Error sending plan to stakeholder: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         }
@@ -128,6 +146,34 @@ public class AdminProjectController {
         try {
             TaskResponseDTO result = projectService.reviewTask(taskId, adminId, dto);
             return ResponseEntity.ok(ApiResponse.success("Task review updated", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ===== ADMIN: UPDATE PROJECT STATUS =====
+    @PatchMapping("/projects/{projectId}/status")
+    public ResponseEntity<ApiResponse<ProjectRequestResponseDTO>> updateProjectStatus(
+            @PathVariable String projectId,
+            @RequestParam String adminId,
+            @RequestBody Map<String, String> body) {
+        String newStatus = body.get("status");
+        try {
+            ProjectRequestResponseDTO result = projectService.updateProjectStatus(projectId, newStatus, adminId);
+            return ResponseEntity.ok(ApiResponse.success("Project status updated successfully", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ===== ADMIN: GET ALL PROJECTS =====
+    @GetMapping("/projects")
+    public ResponseEntity<ApiResponse<List<ProjectRequestResponseDTO>>> getAllProjects() {
+        try {
+            List<ProjectRequestResponseDTO> projects = projectService.getAllProjects();
+            return ResponseEntity.ok(ApiResponse.success("Projects fetched successfully", projects));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));

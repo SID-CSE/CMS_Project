@@ -4,16 +4,29 @@ import EditorSidebar from "../../components/Sidebar/EditorSidebar";
 import RoleFinancePage from "../../components/finance/RoleFinancePage";
 import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest } from "../../services/financeService";
 
+const EMPTY_STATE = {
+  stats: { total_spent: "₹0", pending: "₹0", last_payment: "₹0" },
+  transactions: [],
+  requests: [],
+  expenses: [],
+  counterparties: [],
+};
+
 export default function EditorFinance() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [state, setState] = useState(getFinanceState("editor"));
+  const [state, setState] = useState(EMPTY_STATE);
+
+  const loadState = async () => {
+    const next = await getFinanceState("editor");
+    setState(next || EMPTY_STATE);
+  };
 
   useEffect(() => {
-    setState(getFinanceState("editor"));
+    loadState();
   }, []);
 
-  const sync = (nextState) => {
-    saveFinanceState("editor", nextState);
+  const sync = async (nextState) => {
+    await saveFinanceState("editor", nextState);
     setState(nextState);
   };
 
@@ -31,9 +44,10 @@ export default function EditorFinance() {
             counterparties={state.counterparties || []}
             primaryActionLabel="Request Payout"
             primaryActionHint="Request a payout from admin for completed editorial work."
-            onCreateTransaction={(transaction) => sync(createFinanceTransaction("editor", transaction))}
-            onUpdateRequest={(requestId, patch) => sync(updateFinanceRequest("editor", requestId, patch))}
-            onRecordAction={(transactionId, patch) => sync(recordFinanceAction("editor", transactionId, patch))}
+            onCreateTransaction={async (transaction) => sync(await createFinanceTransaction("editor", transaction))}
+            onUpdateRequest={async (requestId, patch) => sync(await updateFinanceRequest("editor", requestId, patch))}
+            onRecordAction={async (transactionId, patch) => sync(await recordFinanceAction("editor", transactionId, patch))}
+            allowCreate={false}
           />
         </div>
       </main>

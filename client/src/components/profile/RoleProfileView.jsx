@@ -15,9 +15,10 @@ function profileImageOrFallback(profile) {
 
 export default function RoleProfileView({ roleConfig, profile, basePath }) {
   const accent = accentStyles[roleConfig.accent] || accentStyles.blue;
-  const image = profileImageOrFallback(profile);
-  const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || `${roleConfig.roleLabel} User`;
-  const emptyState = profileIsEmpty(profile, roleConfig.defaultProfile);
+  const currentProfile = profile || {};
+  const image = profileImageOrFallback(currentProfile);
+  const fullName = `${currentProfile.firstName || currentProfile.name || ""} ${currentProfile.lastName || ""}`.trim() || `${roleConfig.roleLabel} User`;
+  const emptyState = profileIsEmpty(currentProfile, roleConfig.defaultProfile);
 
   return (
     <div className="space-y-6">
@@ -33,8 +34,8 @@ export default function RoleProfileView({ roleConfig, profile, basePath }) {
             )}
             <div>
               <h1 className="text-2xl font-semibold text-slate-900">{fullName}</h1>
-              <p className="mt-1 text-sm text-slate-500">{profile.email || "No email added"}</p>
-              <p className="mt-1 text-sm text-slate-500">{profile.location || "Location not provided"}</p>
+              <p className="mt-1 text-sm text-slate-500">{currentProfile.email || "No email added"}</p>
+              <p className="mt-1 text-sm text-slate-500">{currentProfile.location || "Location not provided"}</p>
             </div>
           </div>
 
@@ -52,7 +53,7 @@ export default function RoleProfileView({ roleConfig, profile, basePath }) {
           <div key={section.key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">{section.label}</h2>
             <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">
-              {profile[section.key] || "Not provided yet."}
+              {currentProfile[section.key] || "Not provided yet."}
             </p>
           </div>
         ))}
@@ -60,7 +61,7 @@ export default function RoleProfileView({ roleConfig, profile, basePath }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Professional Bio</h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{profile.bio || "No bio available."}</p>
+        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{currentProfile.bio || "No bio available."}</p>
       </section>
     </div>
   );

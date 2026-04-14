@@ -10,7 +10,7 @@ const Landing = () => {
   const menuData = {
     Platform: ["Dashboard", "Analytics", "Workflow Builder", "API Access"],
     Features: ["Video Editing", "Collaboration Tools", "Automated Ledgers", "Feedback Loops"],
-    Solutions: ["For Creators", "For Stakeholders", "For Agencies", "Enterprise"],
+    Solutions: ["For Editors", "For Stakeholders", "For Agencies", "Enterprise"],
     Community: ["Forum", "Events", "Success Stories", "Blog"]
   };
 
@@ -67,7 +67,7 @@ const Landing = () => {
         <div className="md:w-1/2 space-y-6">
           <h1 className="text-[#1734a1] text-6xl font-black italic tracking-tighter">Contify</h1>
           <h2 className="text-4xl md:text-5xl font-bold leading-tight text-slate-900">Where Content <br /> Meets Collaboration</h2>
-          <p className="text-lg text-slate-600 max-w-md">The all-in-one ecosystem for stakeholders to commission, admins to manage, and creators to produce world-class video content.</p>
+          <p className="text-lg text-slate-600 max-w-md">The all-in-one ecosystem for stakeholders to commission, admins to manage, and editors to produce world-class video content.</p>
           <div className="flex gap-4 pt-4">
             <button onClick={() => navigate('/roles')} className="bg-[#1734a1] text-white px-6 py-3 rounded-lg font-medium shadow-md hover:bg-blue-800 transition">Find Top Talent</button>
             <button className="bg-[#4d6ecf] text-white px-6 py-3 rounded-lg font-medium shadow-md">Find Your Next Project</button>
@@ -87,13 +87,13 @@ const Landing = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8 px-16 max-w-7xl mx-auto mb-20">
         <FeatureCard 
           image="https://illustrations.popsy.co/blue/shaking-hands.svg" 
-          title="Creator Collaboration" 
+          title="Editor Collaboration" 
           desc="Scale your video productions with seamless team integration." 
         />
         <FeatureCard 
           image="https://static.vecteezy.com/system/resources/previews/017/585/169/large_2x/customer-feedback-and-user-experience-illustration-characters-giving-review-to-customer-service-operator-choosing-emoji-to-show-satisfaction-rating-and-filling-survey-form-flat-illustration-vector.jpg"
           title="Give Feedback" 
-          desc="Real-time frame-accurate feedback for creators and stakeholders." 
+          desc="Real-time frame-accurate feedback for editors and stakeholders." 
         />
         <FeatureCard 
           image="https://illustrations.popsy.co/blue/digital-nomad.svg" 
@@ -118,7 +118,7 @@ const Landing = () => {
               <li className="cursor-pointer hover:underline">What is Contify?</li>
               <li className="cursor-pointer hover:underline">Stakeholders</li>
               <li className="cursor-pointer hover:underline">Admin</li>
-              <li className="cursor-pointer hover:underline">Creators</li>
+              <li className="cursor-pointer hover:underline">Editors</li>
             </ul>
           </div>
           <div>

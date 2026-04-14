@@ -1,88 +1,182 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import RoleMessagesLayout from "../../components/messaging/RoleMessagesLayout";
-
-const contacts = [
-  {
-    key: "admin-team",
-    name: "Admin Team",
-    email: "admin@contify",
-    subtitle: "Approvals and priority escalations",
-    status: "active",
-    tags: ["Approvals", "Priority"],
-    messages: [
-      {
-        id: "st1",
-        sender: "other",
-        text: "Please review the security bulletin copy before 3 PM.",
-        timestamp: "2026-04-03T06:40:00.000Z",
-      },
-      {
-        id: "st2",
-        sender: "self",
-        text: "Reviewing now. I will confirm in 20 minutes.",
-        timestamp: "2026-04-03T06:53:00.000Z",
-      },
-    ],
-  },
-  {
-    key: "editor-riya",
-    name: "Riya Kapoor",
-    email: "riya.editor@contify",
-    subtitle: "Editor • Support center onboarding guide",
-    status: "considering",
-    tags: ["Editor", "Content quality"],
-    messages: [
-      {
-        id: "st3",
-        sender: "other",
-        text: "Do you want a shorter version for social channels too?",
-        timestamp: "2026-04-03T05:30:00.000Z",
-      },
-    ],
-  },
-  {
-    key: "system",
-    name: "Contify System",
-    email: "notifications@contify",
-    subtitle: "Approval and publishing summaries",
-    status: "system",
-    tags: ["System"],
-    messages: [
-      {
-        id: "st4",
-        sender: "other",
-        text: "Monthly engagement report is ready to review.",
-        timestamp: "2026-04-03T03:50:00.000Z",
-      },
-    ],
-  },
-];
+import { useAuth } from "../../context/AuthContext";
+import projectService from "../../services/projectService";
+import { getContacts, getInboxThreads, getThreadMessages, markThreadRead, sendMessage } from "../../services/messageService";
 
 export default function StakeholderMessages() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user, userId } = useAuth();
+  const [threads, setThreads] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedThread, setSelectedThread] = useState(null);
+  const [draftMessage, setDraftMessage] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!userId) return;
+
+      setLoading(true);
+      const [projectsResult, inboxResult, contactsResult] = await Promise.all([
+        projectService.getClientProjects(userId),
+        getInboxThreads(),
+        getContacts("ADMIN,EDITOR"),
+      ]);
+
+      if (!active) return;
+
+      setProjects(projectsResult.ok ? projectsResult.data || [] : []);
+      setThreads(inboxResult || []);
+      setContacts(contactsResult || []);
+
+      const firstThread = (inboxResult || [])[0] || null;
+      if (firstThread) {
+        setSelectedThread(firstThread);
+        setSelectedProjectId(firstThread.projectId || "");
+        setMessages(await getThreadMessages(firstThread.counterpartId, firstThread.projectId || ""));
+        await markThreadRead(firstThread.counterpartId, firstThread.projectId || "");
+      } else {
+        setSelectedThread(null);
+        setSelectedProjectId("");
+        setMessages([]);
+      }
+
+      setLoading(false);
+    };
+
+    load().catch(() => {
+      if (active) {
+        setThreads([]);
+        setMessages([]);
+        setContacts([]);
+        setProjects([]);
+        setSelectedThread(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+
+  }, [userId]);
+
+  const refreshInbox = async () => {
+    const [projectsResult, inboxResult, contactsResult] = await Promise.all([
+      projectService.getClientProjects(userId),
+      getInboxThreads(),
+      getContacts("ADMIN,EDITOR"),
+    ]);
+    setProjects(projectsResult.ok ? projectsResult.data || [] : []);
+    setThreads(inboxResult || []);
+    setContacts(contactsResult || []);
+  };
+
+  const openThread = async (thread) => {
+    setError("");
+    setStatusMessage("");
+    setSelectedThread(thread);
+    setSelectedProjectId(thread.projectId || "");
+    const threadMessages = await getThreadMessages(thread.counterpartId, thread.projectId || "");
+    setMessages(threadMessages || []);
+    await markThreadRead(thread.counterpartId, thread.projectId || "");
+    await refreshInbox();
+  };
+
+  const startConversation = async (contactId) => {
+    const contact = contacts.find((item) => item.id === contactId);
+    if (!contact) return;
+
+    const existingThread = threads.find((thread) => thread.counterpartId === contactId && (!selectedProjectId || thread.projectId === selectedProjectId));
+    if (existingThread) {
+      await openThread(existingThread);
+      return;
+    }
+
+    setSelectedThread({
+      counterpartId: contact.id,
+      counterpart: contact,
+      projectId: selectedProjectId || "",
+      projectTitle: projects.find((project) => project.id === selectedProjectId)?.title || "",
+      lastMessage: "",
+      lastMessageAt: null,
+      unreadCount: 0,
+    });
+    setMessages([]);
+  };
+
+  const handleSend = async (activeThread) => {
+    if (!activeThread || !draftMessage.trim()) return;
+
+    setSending(true);
+    setError("");
+    setStatusMessage("");
+
+    try {
+      await sendMessage({
+        recipientId: activeThread.counterpartId,
+        projectId: selectedProjectId || activeThread.projectId || "",
+        body: draftMessage.trim(),
+      });
+      setDraftMessage("");
+      await refreshInbox();
+      setMessages(await getThreadMessages(activeThread.counterpartId, selectedProjectId || activeThread.projectId || ""));
+      setStatusMessage("Message sent.");
+    } catch (sendError) {
+      setError(sendError.message || "Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const currentThread = selectedThread
+    ? threads.find((thread) => thread.counterpartId === selectedThread.counterpartId && (thread.projectId || "") === (selectedProjectId || selectedThread.projectId || "")) || selectedThread
+    : null;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <StakeholderSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <StakeholderNavbar onMenuClick={() => setSidebarOpen((prev) => !prev)} sidebarOpen={sidebarOpen}  />
+      <StakeholderNavbar onMenuClick={() => setSidebarOpen((prev) => !prev)} sidebarOpen={sidebarOpen} compactProfile />
 
       <main className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:pl-70" : "lg:pl-0"}`}>
         <div className="w-full space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h1 className="text-2xl font-semibold text-slate-900">Stakeholder messages</h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Track approval conversations, ask for revisions, and confirm publishing priorities quickly.
-            </p>
-          </section>
+          {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+          {statusMessage ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{statusMessage}</div> : null}
 
           <RoleMessagesLayout
             roleLabel="Stakeholder"
             listTitle="Approval conversations"
-            contacts={contacts}
+            threads={threads}
+            selectedThreadId={currentThread?.counterpartId || ""}
+            selectedThread={currentThread || null}
+            messages={messages}
+            availableContacts={contacts}
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            currentUserId={userId}
+            currentUserName={user?.name || user?.username || "Stakeholder"}
+            loading={loading}
+            sending={sending}
+            draftMessage={draftMessage}
+            composerPlaceholder="Message your admin or editor"
             helperText="Use this space for approval decisions, risk notes, and campaign timing updates."
+            onSelectThread={openThread}
+            onStartConversation={startConversation}
+            onSelectProject={setSelectedProjectId}
+            onDraftChange={setDraftMessage}
+            onSend={handleSend}
+            onRefresh={refreshInbox}
+            onMarkRead={(thread) => markThreadRead(thread.counterpartId, thread.projectId || "")}
           />
         </div>
       </main>

@@ -15,7 +15,7 @@ const Signup= () => {
   const [submitting, setSubmitting] = useState(false);
 
   const displayRole = useMemo(() => {
-    return roleName || localStorage.getItem('selectedRole') || 'Creator';
+    return roleName || localStorage.getItem('selectedRole') || 'Editor';
   }, [roleName]);
 
   useEffect(() => {

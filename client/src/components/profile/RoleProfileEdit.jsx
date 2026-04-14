@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function RoleProfileEdit({ roleConfig, initialProfile, basePath, onSave }) {
@@ -11,6 +11,10 @@ export default function RoleProfileEdit({ roleConfig, initialProfile, basePath, 
     if (!form.profileImage) return "";
     return form.profileImage;
   }, [form.profileImage]);
+
+  useEffect(() => {
+    setForm(initialProfile);
+  }, [initialProfile]);
 
   const handleInputChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));

@@ -2,33 +2,42 @@ import React, { useEffect, useState } from "react";
 import AdminNavbar from "../../components/Navbar/AdminNavbar";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import ContentKanban from "../../components/content/ContentKanban";
-import { contentRoles, createContentDraft, loadAuditLog, loadContentItems, updateContentStatus } from "../../components/content/contentStorage";
+import { contentRoles, loadAuditLog, loadContentItems, updateContentStatus } from "../../components/content/contentStorage";
 
 export default function AdminContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [items, setItems] = useState(loadContentItems("admin"));
-  const [auditLog, setAuditLog] = useState(loadAuditLog("admin"));
+  const [items, setItems] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
 
   useEffect(() => {
-    setItems(loadContentItems("admin"));
-    setAuditLog(loadAuditLog("admin"));
+    let active = true;
+    Promise.all([loadContentItems("admin"), loadAuditLog("admin")])
+      .then(([nextItems, nextAudit]) => {
+        if (!active) return;
+        setItems(nextItems);
+        setAuditLog(nextAudit);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItems([]);
+        setAuditLog([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const refresh = () => {
-    setItems(loadContentItems("admin"));
-    setAuditLog(loadAuditLog("admin"));
-  };
-
-  const handleAdvance = (item) => {
+  const handleAdvance = async (item) => {
     const nextStatus = contentRoles.admin.nextStep[item.status];
     if (!nextStatus) return;
-    const result = updateContentStatus("admin", item.id, nextStatus, "Admin");
+    const result = await updateContentStatus("admin", item.id, nextStatus, "Admin");
     setItems(result.items);
     setAuditLog(result.audit);
   };
 
-  const handleReject = (item) => {
-    const result = updateContentStatus("admin", item.id, "Rejected", "Admin");
+  const handleReject = async (item) => {
+    const result = await updateContentStatus("admin", item.id, "Rejected", "Admin");
     setItems(result.items);
     setAuditLog(result.audit);
   };
@@ -45,7 +54,6 @@ export default function AdminContent() {
             auditLog={auditLog}
             onAdvance={handleAdvance}
             onReject={handleReject}
-            onCreateDraft={() => refresh()}
           />
         </div>
       </main>

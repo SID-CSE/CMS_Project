@@ -2,31 +2,31 @@ import React, { useEffect, useState } from "react";
 import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import ContentKanban from "../../components/content/ContentKanban";
-import { contentRoles, loadAuditLog, loadContentItems, updateContentStatus } from "../../components/content/contentStorage";
+import { contentRoles, loadAuditLog, loadContentItems } from "../../components/content/contentStorage";
 
 export default function ViewContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [items, setItems] = useState(loadContentItems("stakeholder"));
-  const [auditLog, setAuditLog] = useState(loadAuditLog("stakeholder"));
+  const [items, setItems] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
 
   useEffect(() => {
-    setItems(loadContentItems("stakeholder"));
-    setAuditLog(loadAuditLog("stakeholder"));
+    let active = true;
+    Promise.all([loadContentItems("stakeholder"), loadAuditLog("stakeholder")])
+      .then(([nextItems, nextAudit]) => {
+        if (!active) return;
+        setItems(nextItems);
+        setAuditLog(nextAudit);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItems([]);
+        setAuditLog([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
-
-  const handleAdvance = (item) => {
-    const nextStatus = contentRoles.stakeholder.nextStep[item.status];
-    if (!nextStatus) return;
-    const result = updateContentStatus("stakeholder", item.id, nextStatus, "Stakeholder");
-    setItems(result.items);
-    setAuditLog(result.audit);
-  };
-
-  const handleReject = (item) => {
-    const result = updateContentStatus("stakeholder", item.id, "Rejected", "Stakeholder");
-    setItems(result.items);
-    setAuditLog(result.audit);
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -38,8 +38,6 @@ export default function ViewContent() {
             roleConfig={contentRoles.stakeholder}
             items={items}
             auditLog={auditLog}
-            onAdvance={handleAdvance}
-            onReject={handleReject}
           />
         </div>
       </main>

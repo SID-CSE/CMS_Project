@@ -36,6 +36,15 @@ public class ProjectRequest {
     @Column(nullable = false)
     private ProjectStatus status = ProjectStatus.REQUESTED;
 
+    @Column(name = "stakeholder_rating")
+    private Integer stakeholderRating;
+
+    @Column(name = "stakeholder_feedback", columnDefinition = "LONGTEXT")
+    private String stakeholderFeedback;
+
+    @Column(name = "stakeholder_reviewed_at")
+    private LocalDateTime stakeholderReviewedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -91,6 +100,15 @@ public class ProjectRequest {
 
     public ProjectStatus getStatus() { return status; }
     public void setStatus(ProjectStatus status) { this.status = status; }
+
+    public Integer getStakeholderRating() { return stakeholderRating; }
+    public void setStakeholderRating(Integer stakeholderRating) { this.stakeholderRating = stakeholderRating; }
+
+    public String getStakeholderFeedback() { return stakeholderFeedback; }
+    public void setStakeholderFeedback(String stakeholderFeedback) { this.stakeholderFeedback = stakeholderFeedback; }
+
+    public LocalDateTime getStakeholderReviewedAt() { return stakeholderReviewedAt; }
+    public void setStakeholderReviewedAt(LocalDateTime stakeholderReviewedAt) { this.stakeholderReviewedAt = stakeholderReviewedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

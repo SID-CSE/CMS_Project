@@ -1,9 +1,10 @@
 package com.example.server.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ProjectRequestResponseDTO {
     
@@ -13,6 +14,9 @@ public class ProjectRequestResponseDTO {
     private List<String> contentTypes;
     private LocalDate deadline;
     private String status;
+    private Integer stakeholderRating;
+    private String stakeholderFeedback;
+    private LocalDateTime stakeholderReviewedAt;
     
     @JsonProperty("client")
     private UserSummaryDTO client;
@@ -81,6 +85,30 @@ public class ProjectRequestResponseDTO {
     
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getStakeholderRating() {
+        return stakeholderRating;
+    }
+
+    public void setStakeholderRating(Integer stakeholderRating) {
+        this.stakeholderRating = stakeholderRating;
+    }
+
+    public String getStakeholderFeedback() {
+        return stakeholderFeedback;
+    }
+
+    public void setStakeholderFeedback(String stakeholderFeedback) {
+        this.stakeholderFeedback = stakeholderFeedback;
+    }
+
+    public LocalDateTime getStakeholderReviewedAt() {
+        return stakeholderReviewedAt;
+    }
+
+    public void setStakeholderReviewedAt(LocalDateTime stakeholderReviewedAt) {
+        this.stakeholderReviewedAt = stakeholderReviewedAt;
     }
     
     public UserSummaryDTO getClient() {

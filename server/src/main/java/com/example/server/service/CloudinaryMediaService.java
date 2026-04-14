@@ -34,8 +34,9 @@ public class CloudinaryMediaService {
         if (submission == null) {
             throw new IllegalArgumentException("Task submission is required");
         }
-        if (submission.getPublicId() == null || submission.getPublicId().isBlank()) {
-            throw new IllegalArgumentException("Task submission has no Cloudinary publicId");
+        String publicId = submission.getS3Key();
+        if (publicId == null || publicId.isBlank()) {
+            throw new IllegalArgumentException("Task submission has no media public id");
         }
 
         String fileType = submission.getFileType() == null ? "" : submission.getFileType().trim().toUpperCase(Locale.ROOT);
@@ -46,7 +47,7 @@ public class CloudinaryMediaService {
                     .transformation(new Transformation<>().streamingProfile(streamingProfile))
                     .format("m3u8")
                     .signed(true)
-                    .generate(submission.getPublicId());
+                    .generate(publicId);
         }
 
         String resourceType = "image";
@@ -58,7 +59,7 @@ public class CloudinaryMediaService {
                 .resourceType(resourceType)
                 .type("upload")
                 .signed(true)
-                .generate(submission.getPublicId());
+            .generate(publicId);
     }
 
     public Instant streamUrlExpiry() {

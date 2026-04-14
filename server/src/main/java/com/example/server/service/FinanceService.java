@@ -1,18 +1,30 @@
 package com.example.server.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.server.dto.CreateFinanceRequestDTO;
 import com.example.server.dto.FinanceDistributionDTO;
 import com.example.server.dto.FinanceProjectDTO;
 import com.example.server.dto.FinanceRequestDTO;
-import com.example.server.entity.*;
-import com.example.server.repository.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.*;
+import com.example.server.entity.FinanceDistribution;
+import com.example.server.entity.FinanceRequest;
+import com.example.server.entity.ProjectRequest;
+import com.example.server.entity.Task;
+import com.example.server.entity.User;
+import com.example.server.repository.FinanceDistributionRepository;
+import com.example.server.repository.FinanceRequestRepository;
+import com.example.server.repository.ProjectRequestRepository;
+import com.example.server.repository.TaskRepository;
+import com.example.server.repository.UserRepository;
 
 @Service
 public class FinanceService {
@@ -22,18 +34,21 @@ public class FinanceService {
     private final ProjectRequestRepository projectRequestRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public FinanceService(
             FinanceRequestRepository financeRequestRepository,
             FinanceDistributionRepository financeDistributionRepository,
             ProjectRequestRepository projectRequestRepository,
             TaskRepository taskRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.financeRequestRepository = financeRequestRepository;
         this.financeDistributionRepository = financeDistributionRepository;
         this.projectRequestRepository = projectRequestRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -67,6 +82,15 @@ public class FinanceService {
         request.setStatus(FinanceRequest.FinanceStatus.SENT);
 
         FinanceRequest saved = financeRequestRepository.save(request);
+
+        notificationService.createNotification(
+            stakeholder.getId(),
+            stakeholder,
+            "FINANCE_REQUEST_SENT",
+            "Payment Request Sent",
+            "A payment request was sent for project: " + project.getTitle(),
+            saved.getId());
+
         return mapRequest(saved);
     }
 
@@ -103,7 +127,20 @@ public class FinanceService {
 
         request.setStatus(FinanceRequest.FinanceStatus.PAID);
         request.setPaidAt(LocalDateTime.now());
-        return mapRequest(financeRequestRepository.save(request));
+        FinanceRequest saved = financeRequestRepository.save(request);
+
+        User admin = userRepository.findById(saved.getRequestedBy()).orElse(null);
+        if (admin != null) {
+            notificationService.createNotification(
+                    admin.getId(),
+                    admin,
+                    "FINANCE_REQUEST_PAID",
+                    "Payment Confirmed",
+                    "Stakeholder marked finance request as paid for project: " + (saved.getProject() != null ? saved.getProject().getTitle() : saved.getProjectId()),
+                    saved.getId());
+        }
+
+        return mapRequest(saved);
     }
 
     @Transactional
@@ -169,6 +206,28 @@ public class FinanceService {
         request.setStatus(FinanceRequest.FinanceStatus.DISTRIBUTED);
         request.setDistributedAt(LocalDateTime.now());
         financeRequestRepository.save(request);
+
+        String projectTitle = request.getProject() != null ? request.getProject().getTitle() : request.getProjectId();
+        for (User contributor : contributors.values()) {
+            notificationService.createNotification(
+                    contributor.getId(),
+                    contributor,
+                    "FINANCE_DISTRIBUTED",
+                    "Payout Released",
+                    "Your payout has been released for project: " + projectTitle,
+                    request.getId());
+        }
+
+        User stakeholder = userRepository.findById(request.getStakeholderId()).orElse(null);
+        if (stakeholder != null) {
+            notificationService.createNotification(
+                    stakeholder.getId(),
+                    stakeholder,
+                    "FINANCE_DISTRIBUTED",
+                    "Distribution Completed",
+                    "Payment distribution completed for project: " + projectTitle,
+                    request.getId());
+        }
 
         return mapRequest(request);
     }

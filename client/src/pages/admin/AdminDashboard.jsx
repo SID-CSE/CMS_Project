@@ -1,52 +1,45 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminNavbar from "../../components/Navbar/AdminNavbar";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import RoleDashboardView from "../../components/dashboard/RoleDashboardView";
-
-const stats = [
-  { title: "Active Projects", value: "12", note: "3 waiting for final review" },
-  { title: "Pending Reviews", value: "7", note: "2 marked urgent" },
-  { title: "Editors Online", value: "5", note: "2 currently publishing" },
-  { title: "Published Today", value: "18", note: "Across all channels" },
-];
-
-const sideSections = [
-  {
-    id: "review-queue",
-    title: "Review Queue",
-    items: [
-      "Landing page copy needs approval",
-      "Q2 blog batch needs edits",
-      "Newsletter draft ready to publish",
-    ],
-    emptyText: "No pending actions.",
-  },
-  {
-    id: "editors",
-    title: "Editors",
-    items: [
-      "Ananya Jain • Available",
-      "Siddharth Rao • Busy",
-      "Meera Iyer • Available",
-    ],
-    emptyText: "No editor updates.",
-  },
-];
-
-const activitySection = {
-  title: "Recent Activity",
-  items: [
-    "Homepage redesign moved to review",
-    "3 articles published to blog",
-    "Case study library assigned to new editor",
-    "SEO checklist completed for launch page",
-  ],
-  emptyText: "No recent activity.",
-};
+import { authService } from "../../services/authService";
+import { getAdminDashboardData } from "../../services/workflowService";
 
 export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    stats: [],
+    sideSections: [],
+    activitySection: { title: "Recent Activity", items: [], emptyText: "No recent activity." },
+    trend: { labels: [], values: [] },
+    lastUpdated: null,
+    hasPartialData: false,
+  });
+
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAdminDashboardData(authService.getUserId());
+      setDashboardData(data);
+    } catch {
+      setDashboardData({
+        stats: [],
+        sideSections: [],
+        activitySection: { title: "Recent Activity", items: [], emptyText: "No recent activity." },
+        trend: { labels: [], values: [] },
+        lastUpdated: null,
+        hasPartialData: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -61,14 +54,19 @@ export default function AdminDashboard() {
             subtitle="Manage projects, review workflows, and editorial operations from a single dashboard."
             primaryAction={{ label: "Manage Users", to: "/admin/users" }}
             secondaryAction={{ label: "Open Messages", to: "/admin/messages" }}
-            stats={stats}
+            stats={dashboardData.stats}
             mainSection={{
               id: "project-overview",
               title: "Project Performance",
               subtitle: "Publishing and review movement over the last 30 days",
             }}
-            sideSections={sideSections}
-            activitySection={activitySection}
+            sideSections={dashboardData.sideSections}
+            activitySection={dashboardData.activitySection}
+            hasPartialData={dashboardData.hasPartialData}
+            trend={dashboardData.trend}
+            lastUpdated={dashboardData.lastUpdated}
+            isLoading={isLoading}
+            onRefresh={loadDashboard}
           />
         </div>
       </main>

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { readRoleProfile } from './profileStorage';
+import { authService } from '../../services/authService';
 import { roleProfileConfig } from './roleProfileConfig';
 
 function initialsFromProfile(profile) {
-  const first = profile?.firstName?.[0] || 'U';
+  const first = profile?.firstName?.[0] || profile?.name?.[0] || 'U';
   const last = profile?.lastName?.[0] || '';
   return `${first}${last}`.toUpperCase();
 }
@@ -16,22 +16,8 @@ export default function ProfileLayout({
   roleKey,
   tabs,
 }) {
-  const [profile, setProfile] = useState(null);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const userData = localStorage.getItem('user');
-        const user = userData ? JSON.parse(userData) : {};
-        const key = roleKey || user.role || 'client';
-        const currentProfile = readRoleProfile(key) || null;
-        setProfile(currentProfile);
-      } catch (err) {
-        setProfile(null);
-      }
-    };
-    load();
-  }, [roleKey]);
+  const currentUser = authService.getCurrentUser();
+  const profile = currentUser || null;
 
   const roleTabs = useMemo(() => {
     if (tabs?.length) return tabs;
@@ -48,7 +34,7 @@ export default function ProfileLayout({
   }, [basePath, tabs]);
 
   const roleMeta = roleKey ? roleProfileConfig[roleKey] : null;
-  const displayName = profile ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() : 'Your Profile';
+  const displayName = profile?.name || `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Your Profile';
 
   return (
     <div className="min-h-screen bg-gray-50 py-3">
@@ -61,7 +47,7 @@ export default function ProfileLayout({
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">{displayName}</h3>
-                <p className="text-sm text-gray-500">{profile?.company || profile?.company_name || roleMeta?.roleLabel || 'Profile information'}</p>
+                <p className="text-sm text-gray-500">{profile?.company || roleMeta?.roleLabel || 'Profile information'}</p>
               </div>
             </div>
 
