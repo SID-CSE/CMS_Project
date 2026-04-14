@@ -52,7 +52,7 @@ export default function AdminDashboard() {
             portalLabel="Admin Portal"
             headline="Welcome Back, Admin"
             subtitle="Manage projects, review workflows, and editorial operations from a single dashboard."
-            primaryAction={{ label: "Manage Users", to: "/admin/users" }}
+            primaryAction={{ label: "Open Projects", to: "/admin/projects" }}
             secondaryAction={{ label: "Open Messages", to: "/admin/messages" }}
             stats={dashboardData.stats}
             mainSection={{

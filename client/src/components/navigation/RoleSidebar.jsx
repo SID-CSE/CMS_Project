@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getRoleNavigation, isRoleRouteActive } from "./roleNavigationConfig";
 
-export default function RoleSidebar({ role = "editor", width = 280, open = true, onClose }) {
+export default function RoleSidebar({ role = "editor", width = 280, open = true, onClose, allowScroll = true }) {
   const location = useLocation();
   const config = getRoleNavigation(role);
 
@@ -33,7 +33,7 @@ export default function RoleSidebar({ role = "editor", width = 280, open = true,
           </div>
         </div>
 
-        <nav className="mt-8 flex-1 space-y-6 overflow-y-auto pr-1">
+        <nav className={`mt-8 flex-1 space-y-6 pr-1 ${allowScroll ? "overflow-y-auto" : "overflow-hidden"}`}>
           {config.sidebarSections.map((section) => (
             <div key={section.title}>
               <p className="px-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{section.title}</p>

@@ -3,6 +3,7 @@ import AdminNavbar from "../../components/Navbar/AdminNavbar";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import { useAuth } from "../../context/AuthContext";
 import projectService from "../../services/projectService";
+import UserIdentityLink from "../../components/profile/UserIdentityLink";
 
 const PROJECT_STATUSES = [
   { label: "Requested", value: "REQUESTED" },
@@ -152,9 +153,20 @@ export default function AdminProjects() {
                                 <div className="flex-1">
                                   <h3 className="font-semibold text-slate-900">{task.title}</h3>
                                   <p className="mt-1 text-sm text-slate-600">{task.description}</p>
-                                  <p className="mt-1 text-xs text-slate-500">
-                                    Assigned Editor: {task.assignedEditor?.name || task.assignedEditor?.username || "Not assigned"}
-                                  </p>
+                                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                                    <span>Assigned Editor:</span>
+                                    {task.assignedEditor?.id ? (
+                                      <UserIdentityLink
+                                        userId={task.assignedEditor.id}
+                                        name={task.assignedEditor?.name || task.assignedEditor?.username}
+                                        role={task.assignedEditor?.role}
+                                        profileImage={task.assignedEditor?.profileImage}
+                                        className="-ml-1"
+                                      />
+                                    ) : (
+                                      <span>Not assigned</span>
+                                    )}
+                                  </div>
                                 </div>
                                 <span className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ${getTaskStatusColor(task.status)}`}>
                                   {task.status?.replace(/_/g, " ")}

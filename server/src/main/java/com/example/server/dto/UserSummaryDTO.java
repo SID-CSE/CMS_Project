@@ -6,6 +6,8 @@ public class UserSummaryDTO {
     private String email;
     private String username;
     private String role;
+    private String profileImage;
+    private String team;
     
     public UserSummaryDTO() {
     }
@@ -56,5 +58,21 @@ public class UserSummaryDTO {
     
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
     }
 }

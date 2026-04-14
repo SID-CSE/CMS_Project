@@ -13,8 +13,14 @@ out/
 # environment files
 .env
 .env.*
+**/.env
+**/.env.*
+.envrc
+**/.envrc
 !.env.example
+!**/.env.example
 !.env.sample
+!**/.env.sample
 
 # secrets and local credentials
 Credentials.txt
@@ -41,4 +47,38 @@ Thumbs.db
 .metadata/
 
 # local package manager artifacts
-package-lock.json
+# Keep lockfiles versioned for reproducible installs
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Test outputs and coverage
+coverage/
+*.lcov
+
+# Framework/build caches
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Temp files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

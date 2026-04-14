@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +35,34 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserProfileDTO>> getCurrentUser(Authentication authentication) {
         User user = findUserByAuthentication(authentication);
         return ResponseEntity.ok(ApiResponse.success("Profile fetched", toProfileDTO(user)));
+    }
+
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<ApiResponse<UserProfileDTO>> getUserProfileById(
+            Authentication authentication,
+            @PathVariable String userId) {
+        findUserByAuthentication(authentication);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
+        return ResponseEntity.ok(ApiResponse.success("Profile fetched", toProfileDTO(user)));
+    }
+
+    @GetMapping("/team/editors/profiles")
+    public ResponseEntity<ApiResponse<List<UserProfileDTO>>> getTeamEditorProfiles(Authentication authentication) {
+        User currentUser = findUserByAuthentication(authentication);
+        String adminTeam = currentUser.getTeam() == null ? "" : currentUser.getTeam().trim();
+
+        List<UserProfileDTO> editors = userRepository.findByRole(User.UserRole.EDITOR).stream()
+                .filter(user -> user.getIsActive() == null || Boolean.TRUE.equals(user.getIsActive()))
+                .filter(user -> {
+                    if (adminTeam.isBlank()) return true;
+                    String editorTeam = user.getTeam() == null ? "" : user.getTeam().trim();
+                    return editorTeam.isBlank() || editorTeam.equalsIgnoreCase(adminTeam);
+                })
+                .map(this::toProfileDTO)
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.success("Team editor profiles fetched", editors));
     }
 
     @PatchMapping("/me")
@@ -83,6 +112,8 @@ public class UserController {
                     dto.setEmail(user.getEmail());
                     dto.setUsername(user.getUsername());
                     dto.setRole(user.getRole().name());
+                    dto.setProfileImage(user.getProfileImage());
+                    dto.setTeam(user.getTeam());
                     return dto;
                 })
                 .toList();
@@ -106,6 +137,8 @@ public class UserController {
                     dto.setEmail(user.getEmail());
                     dto.setUsername(user.getUsername());
                     dto.setRole(user.getRole() == null ? null : user.getRole().name());
+                    dto.setProfileImage(user.getProfileImage());
+                    dto.setTeam(user.getTeam());
                     return dto;
                 })
                 .toList();

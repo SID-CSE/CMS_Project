@@ -38,6 +38,14 @@ export default function StakeholderDashboard() {
 
   useEffect(() => {
     loadDashboard();
+
+    const intervalId = setInterval(() => {
+      loadDashboard();
+    }, 20000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -51,7 +59,7 @@ export default function StakeholderDashboard() {
           <RoleDashboardView
             portalLabel="Stakeholder Portal"
             headline="Welcome Back, Stakeholder"
-            subtitle="Review approvals, monitor content impact, and guide publishing priorities."
+            subtitle="Live view of approvals, messages, finance actions, and delivery progress from backend data."
             primaryAction={{ label: "View Content Library", to: "/stakeholder/content" }}
             secondaryAction={{ label: "Open Messages", to: "/stakeholder/messages" }}
             stats={dashboardData.stats}
