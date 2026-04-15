@@ -30,6 +30,18 @@ public class User {
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Column(name = "phone", length = 32)
+    private String phone;
+
+    @Column(name = "job_title", length = 100)
+    private String jobTitle;
+
+    @Column(name = "department", length = 100)
+    private String department;
+
     @Transient
     private String firstName;
 
@@ -39,8 +51,20 @@ public class User {
     @Transient
     private String location;
 
-    @Transient
+    @Column(name = "bio", length = 200)
     private String bio;
+
+    @Column(name = "timezone", nullable = false, length = 64)
+    private String timezone = "Asia/Kolkata";
+
+    @Column(name = "language", nullable = false, length = 16)
+    private String language = "en";
+
+    @Column(name = "avatar_url", length = 1024)
+    private String avatarUrl;
+
+    @Column(name = "notification_prefs", columnDefinition = "json")
+    private String notificationPrefs;
 
     @Transient
     private String team;
@@ -74,9 +98,6 @@ public class User {
 
     @Transient
     private String decisionNotes;
-
-    @Transient
-    private String profileImage;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -120,6 +141,18 @@ public class User {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getJobTitle() { return jobTitle; }
+    public void setJobTitle(String jobTitle) { this.jobTitle = jobTitle; }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
 
@@ -131,6 +164,18 @@ public class User {
 
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
+
+    public String getTimezone() { return timezone; }
+    public void setTimezone(String timezone) { this.timezone = timezone; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getNotificationPrefs() { return notificationPrefs; }
+    public void setNotificationPrefs(String notificationPrefs) { this.notificationPrefs = notificationPrefs; }
 
     public String getTeam() { return team; }
     public void setTeam(String team) { this.team = team; }
@@ -165,8 +210,10 @@ public class User {
     public String getDecisionNotes() { return decisionNotes; }
     public void setDecisionNotes(String decisionNotes) { this.decisionNotes = decisionNotes; }
 
-    public String getProfileImage() { return profileImage; }
-    public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
+    public String getProfileImage() {
+        return this.avatarUrl == null ? null : this.avatarUrl;
+    }
+    public void setProfileImage(String profileImage) { this.avatarUrl = profileImage; }
 
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }

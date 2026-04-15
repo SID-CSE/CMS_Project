@@ -82,3 +82,207 @@ coverage/
 *.swp
 *.swo
 *~
+
+# ============================================
+# PHP PROJECT SPECIFIC (.php_project/)
+# ============================================
+
+# PHP development server
+.phpserver/
+.php-version
+
+# PHP-FPM
+.sock
+
+# Composer (if used later)
+composer.lock
+vendor/
+
+# PHP error logs
+*.php.log
+php-errors.log
+php_errors.log
+
+# Session files (should not be committed)
+php_project/sessions/
+
+# ============================================
+# MAVEN / SPRING PROJECT SPECIFIC (server/)
+# ============================================
+
+# Maven build artifacts
+**/target/
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+**/release.properties
+**/dependency-reduced-pom.xml
+.flattened-pom.xml
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# IDE files for Maven
+.classpath
+.factorypath
+.project
+.settings/
+*.prefs
+*.jdt.ls
+
+# Spring Boot runtime artifacts
+*.jar
+*.war
+*.nar
+server/**/*.jar
+server/**/*.war
+
+# Gradle (if used)
+.gradle/
+**/gradle-wrapper.jar
+**/.gradle/
+
+# ============================================
+# IDE & EDITOR SPECIFIC
+# ============================================
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+.vim/
+*.vim
+
+# VS Code workspace settings (local)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Jetbrains IDEs
+.idea/
+.gradle
+.gradle/
+build/
+
+# ============================================
+# SYSTEM & OS FILES
+# ============================================
+
+# Windows
+Thumbs.db
+*.lnk
+.desktop.ini
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Trashes
+.VolumeIcon.icns
+.TemporaryItems
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================
+# DEVELOPMENT & DEBUGGING
+# ============================================
+
+# Debug files
+*.stackdump
+*.dbg
+debug.log
+
+# Local development databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# MySQL files
+*.ibd
+*.frm
+local_db.sql
+dump.sql
+
+# PHPMyAdmin
+config.inc.php
+
+# Storage and cache
+storage/
+cache/
+tmp/
+temp/
+.tmp/
+
+# ============================================
+# MISCELLANEOUS
+# ============================================
+
+# Package manager lock files (if deciding not to version)
+# Uncomment if you prefer not to version lock files
+# package-lock.json
+# yarn.lock
+# composer.lock
+
+# Custom credentials (important!)
+*.credentials
+secrets.txt
+tokens.txt
+api-keys.json
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*~
+*.swp
+
+# Archive files (usually shouldn't be committed)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Large files (configure as needed)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.iso
+
+# Node DevTools
+node_modules/.cache/
+.npm-cache/
+
+# Playwright/Cypress
+.playwright/
+.cypress/
+
+# Temporary test files
+**/temp/
+**/tmp/
+test-results/
+playwright-report/

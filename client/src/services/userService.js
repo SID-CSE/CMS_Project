@@ -21,3 +21,38 @@ export async function getTeamEditorProfiles() {
   const response = await apiClient.get("/users/team/editors/profiles");
   return unwrapList(response);
 }
+
+export async function getMyProfile() {
+  const response = await apiClient.get("/users/me");
+  return unwrapSingle(response);
+}
+
+export async function updateMyProfile(payload) {
+  const response = await apiClient.patch("/users/me", payload);
+  return unwrapSingle(response);
+}
+
+export async function updateEditorProfile(payload) {
+  const response = await apiClient.patch("/users/me/editor", payload);
+  return unwrapSingle(response);
+}
+
+export async function updateMyAvatar(avatarUrl) {
+  const response = await apiClient.patch("/users/me/avatar", { avatarUrl });
+  return unwrapSingle(response);
+}
+
+export async function updateNotificationPrefs(notificationPrefs) {
+  const response = await apiClient.patch("/users/me/notifications", { notificationPrefs });
+  return unwrapSingle(response);
+}
+
+export async function changeMyPassword(payload) {
+  const response = await apiClient.patch("/users/me/password", payload);
+  return unwrapSingle(response);
+}
+
+export async function getEditorStats() {
+  const response = await apiClient.get("/editor/stats");
+  return unwrapSingle(response);
+}

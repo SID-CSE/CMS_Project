@@ -6,9 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,12 +27,6 @@ public class UserController {
 
     public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserProfileDTO>> getCurrentUser(Authentication authentication) {
-        User user = findUserByAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success("Profile fetched", toProfileDTO(user)));
     }
 
     @GetMapping("/{userId}/profile")
@@ -65,41 +57,6 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Team editor profiles fetched", editors));
     }
 
-    @PatchMapping("/me")
-    public ResponseEntity<ApiResponse<UserProfileDTO>> updateCurrentUser(
-            Authentication authentication,
-            @RequestBody UserProfileDTO dto) {
-        User user = findUserByAuthentication(authentication);
-
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setLocation(dto.getLocation());
-        user.setBio(dto.getBio());
-        user.setTeam(dto.getTeam());
-        user.setResponsibilities(dto.getResponsibilities());
-        user.setGovernanceNotes(dto.getGovernanceNotes());
-        user.setSpecialization(dto.getSpecialization());
-        user.setSkills(dto.getSkills());
-        user.setCurrentFocus(dto.getCurrentFocus());
-        user.setPortfolioNotes(dto.getPortfolioNotes());
-        user.setCompany(dto.getCompany());
-        user.setDesignation(dto.getDesignation());
-        user.setPriorities(dto.getPriorities());
-        user.setDecisionNotes(dto.getDecisionNotes());
-        user.setProfileImage(dto.getProfileImage());
-
-        if (dto.getDisplayName() != null && !dto.getDisplayName().isBlank()) {
-            user.setName(dto.getDisplayName().trim());
-        } else {
-            String combined = combineName(dto.getFirstName(), dto.getLastName());
-            if (!combined.isBlank()) {
-                user.setName(combined);
-            }
-        }
-
-        User saved = userRepository.save(user);
-        return ResponseEntity.ok(ApiResponse.success("Profile updated", toProfileDTO(saved)));
-    }
 
     @GetMapping("/editors")
     public ResponseEntity<ApiResponse<List<UserSummaryDTO>>> getEditors() {
@@ -180,12 +137,6 @@ public class UserController {
         dto.setProfileImage(user.getProfileImage());
         dto.setDisplayName(user.getName());
         return dto;
-    }
-
-    private String combineName(String firstName, String lastName) {
-        String first = firstName == null ? "" : firstName.trim();
-        String last = lastName == null ? "" : lastName.trim();
-        return (first + " " + last).trim();
     }
 
     private boolean matchesRole(User user, String roles) {
