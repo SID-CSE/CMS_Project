@@ -1,103 +1,327 @@
 # Contify CMS
 
-Contify CMS is a role-based content management workflow platform built with React + Spring Boot + MySQL.
+Contify CMS is a role-based content management workflow platform available in **two different implementations**:
 
-It supports a full multi-role process where stakeholders request projects, admins plan and assign work, editors submit deliverables, and stakeholders review final output.
+1. **React + Spring Boot** - Modern SPA with JWT authentication
+2. **PHP 8.3 MVC** - Server-side rendered application with session-based auth
 
-## Documentation Structure
+Both implementations share the same database schema and workflow logic but use different technology stacks.
+
+## 📁 Project Structure
+
+```
+CMS_Project/
+├── client/          # React 19 + Vite frontend (port 5173)
+├── server/          # Spring Boot 4 backend (port 9090)
+├── php_project/     # PHP 8.3 full-stack MVC (port 8000)
+└── README.md        # This file
+```
+
+## 📚 Documentation Structure
 
 This file is the single source of truth for project-level setup and architecture.
 
-Module-specific quick docs:
-- `client/README.md` (frontend run/build shortcuts)
-- `server/README.md` (backend run/build shortcuts)
-- `server/API_DOCUMENTATION.md` (endpoint reference)
+Module-specific docs:
+- `client/README.md` - React frontend run/build shortcuts
+- `server/README.md` - Spring Boot backend run/build shortcuts
+- `server/API_DOCUMENTATION.md` - REST API endpoint reference
+- `php_project/README.md` - **PHP application setup, running instructions, and complete feature guide**
 
-## Project Status
+## 🏗️ Architecture Overview
 
-This project is under active development.
+### **Setup 1: React + Spring Boot (Modern SPA)**
 
-Current build includes major workflow and authentication foundations, and more features are planned (see Roadmap).
+```
+┌─────────────────────────┐
+│   React Frontend        │
+│   Port: 5173            │
+│   (Vite Dev Server)     │
+└────────────┬────────────┘
+             │ (API calls via /api/*)
+             ↓
+┌─────────────────────────┐
+│   Spring Boot API       │
+│   Port: 9090            │
+│   (REST Endpoints)      │
+└────────────┬────────────┘
+             │ (SQL queries)
+             ↓
+┌─────────────────────────┐
+│  MySQL Database         │
+│  (Database: Contify)    │
+└─────────────────────────┘
+```
 
-## Tech Stack
+**Characteristics:**
+- Frontend and backend are **separate applications**
+- Communication via **REST API**
+- Authentication via **JWT tokens**
+- Database: **`Contify`**
+- Best for: Modern development, mobile app support, microservices
 
-### Frontend
-- React 19
-- Vite
-- React Router
-- Tailwind CSS
+---
 
-### Backend
-- Spring Boot 4
-- Spring Data JPA
-- Spring Security
-- JWT authentication (jjwt)
-- MySQL
+### **Setup 2: PHP MVC Full-Stack (Server-Side Rendered)**
 
-## Main Features (Currently Implemented)
+```
+┌──────────────────────────────┐
+│   PHP Application            │
+│   Port: 8000                 │
+│                              │
+│  ├─ Router                   │
+│  ├─ Controllers              │
+│  ├─ Views (SSR HTML)         │
+│  └─ Database Layer           │
+└────────────┬─────────────────┘
+             │ (Direct DB queries)
+             ↓
+┌──────────────────────────────┐
+│  MySQL Database              │
+│  (Database: contify_php)     │
+└──────────────────────────────┘
+```
+
+**Characteristics:**
+- Frontend and backend are **single application**
+- **Server-Side Rendering (SSR)** - HTML generated on server
+- No separate API layer
+- Authentication via **session cookies**
+- Database: **`contify_php`**
+- Best for: Traditional web apps, simpler deployment, lower resource usage
+
+---
+
+## 🚀 Quick Start
+
+### **Option 1: Run React + Spring Setup**
+
+**Requirements:**
+- Java 17+
+- Node.js + npm
+- MySQL with `Contify` database
+
+**Terminal 1 - Start Spring Backend:**
+```bash
+cd server
+mvnw spring-boot:run
+# Backend runs on http://localhost:9090/api
+```
+
+**Terminal 2 - Start React Frontend:**
+```bash
+cd client
+npm install
+npm run dev
+# Frontend runs on http://localhost:5173
+# Open browser to http://localhost:5173
+```
+
+---
+
+### **Option 2: Run PHP Application**
+
+**Requirements:**
+- PHP 8.3+
+- MySQL with `contify_php` database
+- Migrations run (see `php_project/README.md`)
+
+**Terminal 1 - Start PHP Server:**
+```bash
+cd php_project
+php -S localhost:8000 -t public
+# Application runs on http://localhost:8000
+# Open browser to http://localhost:8000
+```
+
+**Detailed setup guide:** See `php_project/README.md`
+
+---
+
+## 📊 Feature Comparison
+
+| Feature | React + Spring | PHP |
+|---------|---|---|
+| **Technology** | React 19 + Spring Boot | PHP 8.3 MVC |
+| **Rendering** | Client-side (SPA) | Server-side (SSR) |
+| **Frontend** | Separate (port 5173) | Integrated (port 8000) |
+| **Backend** | Separate (port 9090) | Integrated (port 8000) |
+| **Authentication** | JWT tokens | Session cookies |
+| **Database** | `Contify` | `contify_php` |
+| **API** | REST JSON endpoints | Form-based + SSR |
+| **Port** | 5173 + 9090 | 8000 |
+
+---
+
+## ✨ Main Features
+
+Implemented across both implementations:
 
 ### Authentication and User Roles
-- JWT-based login and signup
-- Role-based dashboard routing
+- Role-based login and signup (Admin, Editor, Stakeholder)
 - User records persisted in MySQL
-- Username, email, and hashed password storage
-
-### Public Pages
-- Landing page
-- Login
-- Signup with role selection
-- Forgot password UI
+- Secure password storage (hashed)
+- Role-specific dashboards
 
 ### Stakeholder Features
-- Create project request
+- Create project requests
 - View own project requests
-- Review project proposal from admin
-- Accept proposal (mark as done)
-- Request proposal changes
-- View assigned task outputs
-- Sign off delivery after approval cycle
+- Review admin proposals
+- Accept/reject proposals or request changes
+- View and sign off task deliverables
+- Rate and provide feedback on completed projects
 
 ### Admin Features
 - View incoming project requests
-- Open project detail
-- Create proposal (timeline, notes, milestones)
-- Send proposal to stakeholder
+- Create and send proposals to stakeholders
 - Create and assign tasks to editors
 - Review editor submissions
-- Approve or send for revision
-- Additional admin modules/pages (analytics, audit log, settings, finance, users, messaging)
+- Approve work or request revisions
+- Dashboard with analytics
+- Audit logs and settings management
+- Financial tracking and user management
 
 ### Editor Features
-- View assigned tasks
-- Submit work using delivery links/metadata
-- Track task status and revisions
-- Additional editor modules/pages (notifications, profile, finance, messaging, versions)
+- View assigned tasks and deadlines
+- Submit work deliverables
+- Track task status and revision requests
+- Profile management
+- Financial details and notifications
 
 ### System Features
-- Notification service endpoints
-- Project/task state transitions
-- Structured DTO-based API responses
-- Global exception handling
-- CORS configuration for local frontend/backend development
+- Real-time notifications
+- Project/task workflow state management
+- Messaging system with participant tracking
+- Media dashboard with cloud viewer, video player, task streams
+- Content versioning and history tracking
+- Role-specific UI customization
 
-## Workflow Stages
+---
 
-Implemented workflow follows this model:
+## 🔄 Core Workflow
 
-1. Stakeholder submits project request
-2. Admin creates proposal and sends to stakeholder
-3. Stakeholder accepts proposal or requests changes
-4. Admin creates tasks and assigns to editors
-5. Editors submit work deliverables
-6. Admin reviews and approves/revises submissions
-7. Stakeholder signs off final delivery
+Both implementations support the same workflow:
 
-## Repository Structure
+1. **Stakeholder** submits a project request
+2. **Admin** reviews request and creates a proposal with timeline
+3. **Stakeholder** accepts proposal or requests changes
+4. **Admin** creates tasks and assigns them to editors
+5. **Editors** submit work deliverables
+6. **Admin** reviews submissions and approves or requests revision
+7. **Stakeholder** signs off final delivery and provides feedback
 
-```text
+---
+
+## 📦 Repository Structure
+
+```
 CMS_Project/
-  client/   # React frontend
-  server/   # Spring Boot backend
+├── client/                          # React Frontend
+│   ├── src/
+│   │   ├── components/             # React components by feature
+│   │   ├── pages/                  # Page components
+│   │   ├── services/               # API services
+│   │   ├── context/                # React context (auth, etc.)
+│   │   ├── routes/                 # Route definitions
+│   │   └── App.jsx
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md                   # Frontend quick start
+│
+├── server/                          # Spring Boot Backend
+│   ├── src/main/java/com/example/
+│   │   ├── controller/             # REST endpoints
+│   │   ├── entity/                 # JPA entities
+│   │   ├── repository/             # Database access
+│   │   ├── service/                # Business logic
+│   │   ├── security/               # JWT & Auth
+│   │   └── ServerApplication.java
+│   ├── src/main/resources/
+│   │   └── application.properties  # Configuration
+│   ├── pom.xml                     # Maven dependencies
+│   ├── README.md                   # Backend quick start
+│   └── API_DOCUMENTATION.md        # API endpoints
+│
+├── php_project/                    # PHP Full-Stack MVC
+│   ├── public/
+│   │   └── index.php              # Router entry point
+│   ├── src/
+│   │   ├── Controllers/           # Page controllers
+│   │   ├── Core/                  # Application core (Router, DB, Session)
+│   │   ├── Repositories/          # Database access layer
+│   │   └── Middleware/            # Request middleware
+│   ├── views/                     # Server-side rendered templates
+│   │   ├── admin/
+│   │   ├── auth/
+│   │   ├── editor/
+│   │   ├── messages/
+│   │   ├── media/
+│   │   ├── profile/
+│   │   ├── projects/
+│   │   └── layouts/
+│   ├── config/                    # Application configuration
+│   ├── migrations/                # SQL schema migrations
+│   ├── README.md                  # PHP setup & running guide
+│   └── HELP.md                    # PHP troubleshooting
+│
+└── README.md                       # This file
+```
+
+---
+
+## 🔧 Environment Setup
+
+### React + Spring Setup
+
+Create `.env` file in `server/` directory:
+```env
+DB_URL=jdbc:mysql://localhost:3306/Contify?useSSL=false&serverTimezone=UTC
+DB_USERNAME=root
+DB_PASSWORD=root
+JWT_SECRET=your-secret-key-change-in-production
+```
+
+Backend expects React frontend at `http://localhost:5173` (CORS configured).
+
+### PHP Setup
+
+Create `.env` file in `php_project/` directory:
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=contify_php
+DB_USER=root
+DB_PASS=
+```
+
+Then run MySQL migrations (see `php_project/README.md`).
+
+---
+
+## 📝 Project Status
+
+✅ **React + Spring**: Full implementation with all features  
+✅ **PHP**: Complete rewrite with SSR, all major features ported  
+✅ **Recent Additions**: Media dashboards, messaging UI enhancements, role-specific pages
+
+**Next Phase**: Enhanced content management, profile customization, admin analytics
+
+---
+
+## 🤝 Contributing
+
+When adding features:
+1. Implement in React + Spring first (primary)
+2. Port to PHP as SSR equivalent if needed
+3. Keep database schemas in sync
+4. Update both `client/README.md` and `php_project/README.md` if adding routes
+
+---
+
+## 📞 Support
+
+- **React/Spring questions**: See `server/API_DOCUMENTATION.md`
+- **PHP questions**: See `php_project/README.md` and `php_project/HELP.md`
+- **Database issues**: Check migration files in `php_project/migrations/`
 ```
 
 ## Local Setup
