@@ -6,6 +6,7 @@ import Login from "../pages/public/Login";
 import Signup from "../pages/public/Signup";
 import RoleSelection from "../pages/public/RoleSelection";
 import ForgotPassword from "../pages/public/ForgotPassword";
+import ResetPassword from "../pages/public/ResetPassword";
 
 // Editor
 import EditorDashboard from "../pages/editor/EditorDashboard";
@@ -70,6 +71,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/roles" element={<RoleSelection />} />
       <Route path="/signup" element={<Navigate to="/roles" replace />} />
       <Route path="/signup/:roleName" element={<Signup />} />

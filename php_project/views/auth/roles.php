@@ -20,13 +20,18 @@ $roles = [
     ],
 ];
 ?>
-<div class="min-h-screen flex flex-col items-center px-6 py-12 font-sans" style="background-image: linear-gradient(to bottom right, #e0f2ff, #f0f9ff, #ffffff);">
-    <div class="w-full max-w-7xl flex items-center justify-between mb-16">
-        <a href="/" class="text-[#1734a1] text-3xl font-black italic tracking-tighter">Contify</a>
-        <a href="/" class="text-[#1734a1] font-bold hover:underline flex items-center gap-2"><- Exit</a>
+<!-- Brand Header -->
+<div style="width: 100%; border-bottom: 1px solid #e2e8f0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); padding: 16px 24px;">
+    <div style="max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+        <a href="/" style="text-decoration: none; display: flex; flex-direction: column; gap: 2px;">
+            <h1 style="font-size: 24px; font-weight: 900; font-style: italic; color: #1734a1; margin: 0;">Contify</h1>
+        </a>
+        <a href="/" style="font-size: 14px; font-weight: 600; color: #1734a1; text-decoration: none; cursor: pointer;">← Back to Home</a>
     </div>
+</div>
 
-    <div class="text-center mb-16">
+<div class="min-h-screen flex flex-col items-center px-6 py-12 font-sans" style="background-image: linear-gradient(to bottom right, #e0f2ff, #f0f9ff, #ffffff);">
+    <div class="text-center mb-16 mt-16">
         <h1 class="text-[#1734a1] text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">Create Your Account</h1>
         <p class="text-[#1734a1] text-2xl font-medium opacity-80">How do you want to get started?</p>
     </div>

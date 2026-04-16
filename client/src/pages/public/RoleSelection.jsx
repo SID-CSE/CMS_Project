@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import BrandHeader from '../../components/navigation/BrandHeader';
 
 // Updated RoleCard to accept 'image' instead of 'icon'
 const RoleCard = ({ image, role, description, buttonText }) => {
@@ -34,7 +35,7 @@ const RoleCard = ({ image, role, description, buttonText }) => {
 const RoleSelection = () => {
   const navigate = useNavigate();
 
-  // You can use these professional Popsy illustrations or your own local assets
+  // Role data with consistent images across signup flows
   const roles = [
     {
       image: "https://illustrations.popsy.co/blue/video-call.svg",
@@ -57,31 +58,17 @@ const RoleSelection = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e0f2ff] via-[#f0f9ff] to-white flex flex-col items-center px-6 py-12 font-sans">
-      
-      {/* Header with Navigation */}
-      <div className="w-full max-w-7xl flex justify-between items-center mb-16">
-        <h1 
-          onClick={() => navigate('/')} 
-          className="text-[#1734a1] text-3xl font-black italic tracking-tighter cursor-pointer"
-        >
-          Contify
-        </h1>
-        <button 
-          onClick={() => navigate('/')} 
-          className="text-[#1734a1] font-bold hover:underline flex items-center gap-2"
-        >
-          ← Exit
-        </button>
-      </div>
-
-      {/* Title Section */}
-      <div className="text-center mb-16">
-        <h2 className="text-[#1734a1] text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">
-          Create Your Account
-        </h2>
-        <p className="text-[#1734a1] text-2xl font-medium opacity-80">
-          How do you want to get started?
+    <>
+      <BrandHeader />
+      <div className="min-h-screen bg-linear-to-br from-[#e0f2ff] via-[#f0f9ff] to-white flex flex-col items-center px-6 py-12 font-sans">
+        
+        {/* Title Section */}
+        <div className="text-center mb-16 mt-16">
+          <h2 className="text-[#1734a1] text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">
+            Create Your Account
+          </h2>
+          <p className="text-[#1734a1] text-2xl font-medium opacity-80">
+            How do you want to get started?
         </p>
       </div>
 
@@ -108,7 +95,8 @@ const RoleSelection = () => {
           Log In
         </span>
       </p>
-    </div>
+      </div>
+    </>
   );
 };
 

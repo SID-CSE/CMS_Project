@@ -11,6 +11,7 @@ use App\Repositories\UserRepository;
 final class AuthController extends Controller
 {
     private UserRepository $users;
+    private const AUTH_SPLIT_VIEW = 'auth/auth-split';
 
     private const DEFAULT_DASHBOARD_PATH = '/dashboard';
     private const DASHBOARD_PATHS = [
@@ -26,11 +27,15 @@ final class AuthController extends Controller
 
     public function showLogin(): void
     {
-        $this->render('auth/login', [
+        $this->render(self::AUTH_SPLIT_VIEW, [
             'title' => 'Login - Contify',
             'error' => Session::get('flash_error'),
+            'success' => Session::get('flash_success'),
+            'activeForm' => 'login',
+            'role' => 'STAKEHOLDER',
         ]);
         Session::remove('flash_error');
+        Session::remove('flash_success');
     }
 
     public function showRoles(): void
@@ -42,14 +47,26 @@ final class AuthController extends Controller
 
     public function showForgotPassword(): void
     {
-        $this->render('auth/forgot-password', [
+        $this->render(self::AUTH_SPLIT_VIEW, [
             'title' => 'Forgot Password - Contify',
+            'error' => Session::get('flash_error'),
+            'success' => Session::get('flash_success'),
+            'activeForm' => 'forgot',
+            'role' => 'STAKEHOLDER',
         ]);
+        Session::remove('flash_error');
+        Session::remove('flash_success');
     }
 
     public function submitForgotPassword(): void
     {
-        Session::set('flash_error', 'Password reset instructions are not configured yet.');
+        $email = trim((string) ($_POST['email'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Session::set('flash_error', 'Please enter a valid email address.');
+            $this->redirect('/forgot-password');
+        }
+
+        Session::set('flash_success', 'If an account exists for this email, reset instructions have been sent.');
         $this->redirect('/forgot-password');
     }
 
@@ -79,12 +96,15 @@ final class AuthController extends Controller
     {
         $role = strtoupper((string) ($roleName ?: 'STAKEHOLDER'));
 
-        $this->render('auth/signup-role', [
+        $this->render(self::AUTH_SPLIT_VIEW, [
             'title' => $role . ' Signup - Contify',
             'error' => Session::get('flash_error'),
+            'success' => Session::get('flash_success'),
+            'activeForm' => 'signup',
             'role' => $role,
         ]);
         Session::remove('flash_error');
+        Session::remove('flash_success');
     }
 
     public function register(): void

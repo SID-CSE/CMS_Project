@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { notificationService } from "../../services/notificationService";
+import { getDashboardPathForRole } from "../../services/authService";
 import { getRoleNavigation, isRoleRouteActive } from "./roleNavigationConfig";
 
 function MenuIcon() {
@@ -154,10 +155,14 @@ export default function RoleNavbar({
             </button>
           )}
 
-          <div>
+          <button
+            type="button"
+            onClick={() => navigate(getDashboardPathForRole(userRole))}
+            className="hover:opacity-75 transition cursor-pointer flex flex-col items-start gap-0.5"
+          >
             <p className="text-sm font-semibold tracking-wide text-slate-900">Contify</p>
             <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">{config.portalLabel}</p>
-          </div>
+          </button>
         </div>
 
         <div className="relative hidden w-full max-w-xl lg:block">

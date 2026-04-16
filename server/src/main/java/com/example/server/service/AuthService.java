@@ -1,14 +1,24 @@
 package com.example.server.service;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.server.dto.AuthLoginDTO;
 import com.example.server.dto.AuthRegisterDTO;
 import com.example.server.dto.AuthResponseDTO;
 import com.example.server.dto.UserSummaryDTO;
+import com.example.server.entity.PasswordResetToken;
 import com.example.server.entity.User;
+import com.example.server.repository.PasswordResetTokenRepository;
 import com.example.server.repository.UserRepository;
 import com.example.server.security.CustomUserDetailsService;
 import com.example.server.security.JwtService;
@@ -16,19 +26,33 @@ import com.example.server.security.JwtService;
 @Service
 public class AuthService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final JavaMailSender mailSender;
+
+    @Value("${app.frontend.base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
+    @Value("${app.mail.from:no-reply@contify.local}")
+    private String fromEmail;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       CustomUserDetailsService userDetailsService) {
+                       CustomUserDetailsService userDetailsService,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
+                       JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.mailSender = mailSender;
     }
 
     public AuthResponseDTO register(AuthRegisterDTO dto) {
@@ -73,6 +97,76 @@ public class AuthService {
         String token = jwtService.generateToken(userDetails);
 
         return buildAuthResponse(user, token);
+    }
+
+    @Transactional
+    public void forgotPassword(String emailValue) {
+        String email = (emailValue == null ? "" : emailValue.trim().toLowerCase());
+        if (email.isEmpty()) {
+            return;
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        passwordResetTokenRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+        passwordResetTokenRepository.deleteByUser(user);
+
+        PasswordResetToken tokenEntity = new PasswordResetToken();
+        tokenEntity.setUser(user);
+        tokenEntity.setToken(generateSecureToken());
+        tokenEntity.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        passwordResetTokenRepository.save(tokenEntity);
+
+        String resetUrl = frontendBaseUrl + "/reset-password?token=" + tokenEntity.getToken();
+        sendPasswordResetEmail(user.getEmail(), resetUrl);
+    }
+
+    @Transactional
+    public void resetPassword(String tokenValue, String newPassword) {
+        String token = tokenValue == null ? "" : tokenValue.trim();
+        if (token.isEmpty()) {
+            throw new RuntimeException("Invalid reset token.");
+        }
+
+        PasswordResetToken tokenEntity = passwordResetTokenRepository
+                .findByTokenAndUsedAtIsNull(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token."));
+
+        if (tokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token has expired.");
+        }
+
+        User user = tokenEntity.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        tokenEntity.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(tokenEntity);
+    }
+
+    private String generateSecureToken() {
+        byte[] randomBytes = new byte[32];
+        SECURE_RANDOM.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+
+    private void sendPasswordResetEmail(String toEmail, String resetUrl) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Contify Password Reset");
+        message.setText("""
+            We received a request to reset your Contify password.
+
+            Use this link to set a new password (valid for 30 minutes):
+            %s
+
+            If you did not request this, you can ignore this email.
+            """.formatted(resetUrl));
+        mailSender.send(message);
     }
 
     private AuthResponseDTO buildAuthResponse(User user, String token) {

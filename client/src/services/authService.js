@@ -119,6 +119,59 @@ export const authService = {
     }
   },
 
+  async forgotPassword(email) {
+    try {
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      if (!normalizedEmail) {
+        return {
+          ok: false,
+          message: 'Please enter your email in the login form first.',
+        };
+      }
+
+      const response = await apiClient.post('/auth/forgot-password', {
+        email: normalizedEmail,
+      });
+
+      return {
+        ok: true,
+        message: response?.message || 'If your account exists, reset instructions have been sent.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error.message || 'Unable to process forgot password request',
+      };
+    }
+  },
+
+  async resetPassword(token, password) {
+    try {
+      const safeToken = (token || '').trim();
+      if (!safeToken) {
+        return {
+          ok: false,
+          message: 'Invalid reset token.',
+        };
+      }
+
+      const response = await apiClient.post('/auth/reset-password', {
+        token: safeToken,
+        password,
+      });
+
+      return {
+        ok: true,
+        message: response?.message || 'Password has been reset successfully.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error.message || 'Unable to reset password',
+      };
+    }
+  },
+
   async logout() {
     clearUserSession();
     return { ok: true };
