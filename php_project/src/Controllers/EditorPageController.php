@@ -340,6 +340,11 @@ final class EditorPageController extends Controller
             'projects' => $this->projects->findRecent(12),
             'assignedTasks' => $assignedTasks,
             'attachmentsByTask' => $attachmentsByTask,
+            'cloudinary' => [
+                'cloudName' => trim((string) getenv('CLOUDINARY_CLOUD_NAME')),
+                'uploadPreset' => trim((string) getenv('CLOUDINARY_UPLOAD_PRESET')),
+                'uploadFolder' => trim((string) getenv('CLOUDINARY_UPLOAD_FOLDER')) ?: 'Contify_PHP',
+            ],
         ]);
     }
 
@@ -357,4 +362,3 @@ final class EditorPageController extends Controller
         return $attachmentsByTask;
     }
 }
-

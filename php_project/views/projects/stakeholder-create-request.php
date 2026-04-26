@@ -1,7 +1,9 @@
 <?php
+$roleLabel = 'Stakeholder';
+$basePath = '/stakeholder';
+$activePath = '/stakeholder/projects/create';
+require_once __DIR__ . '/../partials/role-sidebar.php';
 ?>
-<div class="min-h-screen bg-slate-100 text-slate-900">
-    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div class="bg-[linear-gradient(120deg,#0f172a_0%,#1e3a8a_55%,#2563eb_100%)] px-6 py-6 text-white sm:px-8">
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">Stakeholder Intake</p>
@@ -26,7 +28,7 @@
         </section>
 
         <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <form method="post" action="/projects" class="space-y-8">
+            <form method="post" action="/stakeholder/projects/request" class="space-y-8">
                 <section class="space-y-5">
                     <div class="border-b border-slate-200 pb-3">
                         <h2 class="text-lg font-semibold text-slate-900">Project Context</h2>
@@ -103,10 +105,9 @@
 
                 <div class="flex flex-col gap-3 sm:flex-row">
                     <button type="submit" class="rounded-xl bg-[#1734a1] px-6 py-3 font-semibold text-white hover:bg-blue-800">Submit Request</button>
-                    <a href="/stakeholder/home" class="rounded-xl border border-slate-300 px-6 py-3 text-center font-semibold text-slate-700 hover:bg-slate-50">Cancel</a>
+                    <a href="/stakeholder/dashboard" class="rounded-xl border border-slate-300 px-6 py-3 text-center font-semibold text-slate-700 hover:bg-slate-50">Cancel</a>
                 </div>
             </form>
         </div>
-    </main>
-</div>
+<?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>
 

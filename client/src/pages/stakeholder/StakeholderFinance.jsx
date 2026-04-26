@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import StakeholderNavbar from "../../components/Navbar/StakeholderNavbar";
 import StakeholderSidebar from "../../components/Sidebar/StakeholderSidebar";
 import RoleFinancePage from "../../components/finance/RoleFinancePage";
-import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest } from "../../services/financeService";
+import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest, getFinanceCycle, closeCycle } from "../../services/financeService";
 
 const EMPTY_STATE = {
   stats: { total_spent: "₹0", pending: "₹0", last_payment: "₹0" },
@@ -15,10 +15,15 @@ const EMPTY_STATE = {
 export default function StakeholderFinance() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [state, setState] = useState(EMPTY_STATE);
+  const [cycle, setCycle] = useState(null);
 
   const loadState = async () => {
-    const next = await getFinanceState("stakeholder");
-    setState(next || EMPTY_STATE);
+    const [financeState, cycleData] = await Promise.all([
+      getFinanceState("stakeholder"),
+      getFinanceCycle("stakeholder"),
+    ]);
+    setState(financeState || EMPTY_STATE);
+    setCycle(cycleData || null);
   };
 
   useEffect(() => {
@@ -44,9 +49,14 @@ export default function StakeholderFinance() {
             counterparties={state.counterparties || []}
             primaryActionLabel="Pay Request"
             primaryActionHint="Pay admin requests directly or record a direct payment for approval."
+            cycle={cycle}
             onCreateTransaction={async (transaction) => sync(await createFinanceTransaction("stakeholder", transaction))}
             onUpdateRequest={async (requestId, patch) => sync(await updateFinanceRequest("stakeholder", requestId, patch))}
             onRecordAction={async (transactionId, patch) => sync(await recordFinanceAction("stakeholder", transactionId, patch))}
+            onCloseCycle={async (cycleId) => {
+              await closeCycle("stakeholder", cycleId);
+              await loadState();
+            }}
             allowCreate={false}
           />
         </div>
@@ -54,5 +64,3 @@ export default function StakeholderFinance() {
     </div>
   );
 }
-
-

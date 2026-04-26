@@ -51,11 +51,11 @@ final class ProjectController extends Controller
 
         if ($title === '' || $description === '' || $deadline === '') {
             Session::set('flash_error', 'Title, description and deadline are required.');
-            $this->redirect('/projects/create');
+            $this->redirect('/stakeholder/projects/create');
         }
 
         $project = $this->projects->create((string) $user['id'], $title, $description, $contentTypes, $deadline);
-        $this->redirect('/projects/' . $project->id);
+        $this->redirect('/stakeholder/projects/' . $project->id);
     }
 
     public function apiCreate(): void

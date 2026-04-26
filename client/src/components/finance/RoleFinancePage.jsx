@@ -80,6 +80,8 @@ export default function RoleFinancePage({
   primaryActionHint,
   counterparties = [],
   allowCreate = true,
+  cycle = null,
+  onCloseCycle = null,
 }) {
   const [selectedCounterparty, setSelectedCounterparty] = useState(counterparties[0]?.email || "");
   const [amount, setAmount] = useState("");
@@ -149,6 +151,41 @@ export default function RoleFinancePage({
           <StatCard key={card.label} {...card} />
         ))}
       </section>
+
+      {cycle ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Finance Cycle</h2>
+              <p className="mt-1 text-sm text-slate-500">Track finances within the current cycle period</p>
+            </div>
+            {cycle.status === 'active' && onCloseCycle && (
+              <button
+                type="button"
+                onClick={() => onCloseCycle?.(cycle.id)}
+                className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Close Cycle
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Period</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{cycle.period || 'Current'}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900 capitalize">{cycle.status || 'N/A'}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Transactions</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{cycle.transactionCount || 0}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.3fr,0.9fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

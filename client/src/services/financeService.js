@@ -201,3 +201,55 @@ export async function updateFinanceRequest(role, requestId, patch) {
 export async function recordFinanceAction(role, transactionId, patch) {
   return updateFinanceRequest(role, transactionId, patch);
 }
+
+export async function getFinanceCycle(role) {
+  if (!role) {
+    return { periods: [], currentPeriod: null, status: 'inactive' };
+  }
+
+  try {
+    const response = await apiClient.get(`/${role}/finance/cycle`);
+    return response?.data || { periods: [], currentPeriod: null, status: 'inactive' };
+  } catch (error) {
+    return { periods: [], currentPeriod: null, status: 'inactive' };
+  }
+}
+
+export async function getFinanceCycleTransactions(role, cycleId) {
+  if (!role || !cycleId) {
+    return [];
+  }
+
+  try {
+    const response = await apiClient.get(`/${role}/finance/cycles/${cycleId}/transactions`);
+    return Array.isArray(response) ? response : response?.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function createFinanceCycle(role, cycleData) {
+  if (!role) {
+    throw new Error('Role is required');
+  }
+
+  try {
+    const response = await apiClient.post(`/${role}/finance/cycles`, cycleData);
+    return response?.data || cycleData;
+  } catch (error) {
+    throw new Error(error.message || 'Failed to create finance cycle');
+  }
+}
+
+export async function closeCycle(role, cycleId) {
+  if (!role || !cycleId) {
+    throw new Error('Role and cycle ID are required');
+  }
+
+  try {
+    const response = await apiClient.patch(`/${role}/finance/cycles/${cycleId}/close`, {});
+    return response?.data || { status: 'closed' };
+  } catch (error) {
+    throw new Error(error.message || 'Failed to close finance cycle');
+  }
+}

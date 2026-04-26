@@ -4,16 +4,19 @@
 /** @var \App\Models\ProjectTask $task */
 /** @var array<\App\Models\TaskAttachment> $attachments */
 /** @var array<int,array{label:string,value:string,kind:string}> $timeline */
+
+$roleLabel = 'Editor';
+$basePath = '/editor';
+$activePath = '/editor/content';
+require_once __DIR__ . '/../partials/role-sidebar.php';
 ?>
-<div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-5xl p-6 lg:p-10">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
                 <h2 class="mt-1 text-3xl font-bold text-slate-900">Version History</h2>
                 <p class="mt-2 text-sm text-slate-500">A compact timeline for the selected content item.</p>
             </div>
-            <a href="/content/<?= urlencode($task->id) ?>/view" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Viewer</a>
+            <a href="/editor/content/<?= urlencode($task->id) ?>/view" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Viewer</a>
         </div>
 
         <section class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -58,5 +61,4 @@
                 </div>
             </div>
         </section>
-    </div>
-</div>
+<?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>

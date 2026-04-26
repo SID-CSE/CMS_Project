@@ -17,7 +17,7 @@ final class AuthController extends Controller
     private const DASHBOARD_PATHS = [
         'ADMIN' => '/admin/dashboard',
         'EDITOR' => '/editor/dashboard',
-        'STAKEHOLDER' => '/stakeholder/home',
+        'STAKEHOLDER' => '/stakeholder/dashboard',
     ];
 
     public function __construct()
@@ -86,6 +86,8 @@ final class AuthController extends Controller
             'id' => $user->id,
             'email' => $user->email,
             'name' => $user->name,
+            'displayName' => $user->displayName ?? $user->name,
+            'avatarUrl' => $user->avatarUrl,
             'role' => $user->role,
         ]);
 
@@ -132,6 +134,8 @@ final class AuthController extends Controller
             'id' => $user->id,
             'email' => $user->email,
             'name' => $user->name,
+            'displayName' => $user->displayName ?? $user->name,
+            'avatarUrl' => $user->avatarUrl,
             'role' => $user->role,
         ]);
 

@@ -42,8 +42,8 @@ final class StakeholderPageController extends Controller
             $projects = $this->projects->findByClientId((string) $user['id']);
         }
 
-        $this->render('stakeholder/home', [
-            'title' => 'Stakeholder Home',
+        $this->render('stakeholder/dashboard', [
+            'title' => 'Stakeholder Dashboard',
             'user' => $user,
             'unreadNotifications' => $this->notifications->countUnreadForUser(
                 (string) ($user['id'] ?? ''),
@@ -222,7 +222,7 @@ final class StakeholderPageController extends Controller
                 ['to' => self::PROFILE_BASE_PATH . '/edit', 'label' => 'Edit Profile'],
                 ['to' => '/stakeholder/messages', 'label' => 'Messages'],
                 ['to' => self::FINANCE_BASE_PATH, 'label' => 'Finance'],
-                ['to' => '/stakeholder/home', 'label' => 'Dashboard'],
+                ['to' => '/stakeholder/dashboard', 'label' => 'Dashboard'],
             ],
         ]);
     }
@@ -242,7 +242,7 @@ final class StakeholderPageController extends Controller
                 ['to' => self::PROFILE_BASE_PATH . '/edit', 'label' => 'Edit Profile'],
                 ['to' => '/stakeholder/messages', 'label' => 'Messages'],
                 ['to' => self::FINANCE_BASE_PATH, 'label' => 'Finance'],
-                ['to' => '/stakeholder/home', 'label' => 'Dashboard'],
+                ['to' => '/stakeholder/dashboard', 'label' => 'Dashboard'],
             ],
         ]);
     }

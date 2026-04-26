@@ -69,8 +69,7 @@ final class ProjectRequestRepository
 
     public function findRecent(int $limit = 5): array
     {
-        $stmt = $this->db->prepare('SELECT * FROM project_requests ORDER BY created_at DESC LIMIT :limit');
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt = $this->db->prepare('SELECT * FROM project_requests ORDER BY created_at DESC LIMIT ' . (int) $limit);
         $stmt->execute();
 
         $rows = $stmt->fetchAll();

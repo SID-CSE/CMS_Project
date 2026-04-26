@@ -24,10 +24,17 @@
                 </div>
                 <p class="mt-2 text-sm text-slate-600"><?= htmlspecialchars($task->description, ENT_QUOTES, 'UTF-8') ?></p>
                 <?php if (!empty($attachmentsByTask[$task->id])): ?>
-                    <p class="mt-2 text-xs text-slate-500"><?= count($attachmentsByTask[$task->id]) ?> attached file(s)</p>
+                    <?php $latestAttachment = $attachmentsByTask[$task->id][0]; ?>
+                    <div class="mt-2 rounded-xl bg-slate-50 p-3">
+                        <p class="text-xs text-slate-500"><?= count($attachmentsByTask[$task->id]) ?> attached file(s)</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-700"><?= htmlspecialchars($latestAttachment->originalName, ENT_QUOTES, 'UTF-8') ?></p>
+                        <div class="mt-2 flex items-center gap-2">
+                            <span class="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700"><?= htmlspecialchars((string) ($latestAttachment->fileType ?? 'FILE'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <a href="<?= htmlspecialchars((string) ($latestAttachment->streamUrl ?: $latestAttachment->filePath), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noreferrer" class="text-xs font-semibold text-[#1734a1] hover:underline">Open latest upload</a>
+                        </div>
+                    </div>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
     </div>
 </section>
-

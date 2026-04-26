@@ -2,9 +2,15 @@
 /** @var array{id:string,email:string,name:string,role:string} $user */
 /** @var array<\App\Models\User> $users */
 /** @var array<string,int> $roleCounts */
+$roleLabel = 'Admin';
+$basePath = '/admin';
+$activePath = '/admin/users';
 ?>
+<?php require_once __DIR__ . '/../partials/role-topbar.php'; ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-6xl p-6 lg:p-10">
+    <?php require_once __DIR__ . '/../partials/role-sidebar.php'; ?>
+            <div class="p-6 lg:p-10\">
+            <div class="mx-auto max-w-6xl">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
@@ -46,6 +52,9 @@
                     </tbody>
                 </table>
             </div>
-        </section>
-    </div>
+            </section>
+            </div>
+            </div>
+    <?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>
 </div>
+

@@ -3,9 +3,12 @@
 /** @var \App\Models\ProjectRequest $project */
 /** @var array<\App\Models\ProjectTask> $tasks */
 /** @var array<string,array<\App\Models\TaskAttachment>> $attachmentsByTask */
+
+$roleLabel = 'Stakeholder';
+$basePath = '/stakeholder';
+$activePath = '/stakeholder/content';
+require_once __DIR__ . '/../partials/role-sidebar.php';
 ?>
-<div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-6xl p-6 lg:p-10">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
@@ -61,5 +64,4 @@
                 </div>
             </div>
         </section>
-    </div>
-</div>
+<?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>

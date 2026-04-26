@@ -41,10 +41,6 @@ export default function CloudMediaViewer({ mediaUrl, fileType, title = "Cloud pr
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg">
-      <div className="border-b border-white/10 px-4 py-3 text-sm font-medium text-slate-200">
-        {title}
-      </div>
-
       {mediaKind === "video" ? (
         <video
           ref={videoRef}
