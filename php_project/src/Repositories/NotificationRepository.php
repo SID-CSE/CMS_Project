@@ -73,13 +73,12 @@ final class NotificationRepository
                 OR recipient_email = :recipient_email
                 OR recipient_role = :recipient_role
              ORDER BY created_at DESC
-             LIMIT :limit'
+             LIMIT ' . (int) $limit
         );
 
         $stmt->bindValue(':user_id', $userId);
         $stmt->bindValue(':recipient_email', strtolower($email));
         $stmt->bindValue(':recipient_role', strtoupper($role));
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
         $rows = $stmt->fetchAll();
@@ -169,4 +168,3 @@ final class NotificationRepository
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 }
-

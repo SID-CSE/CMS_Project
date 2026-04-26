@@ -1,9 +1,13 @@
 <?php
 /** @var \App\Models\ProjectRequest $project */
 ?>
-<div class="min-h-screen bg-slate-50 px-6 py-8">
-    <div class="max-w-5xl mx-auto">
-        <a href="/dashboard" class="inline-flex items-center text-sm font-medium text-blue-700 hover:underline mb-5"><- Back to Dashboard</a>
+<?php
+$roleLabel = 'Stakeholder';
+$basePath = '/stakeholder';
+$activePath = '/stakeholder/projects';
+require_once __DIR__ . '/../partials/role-sidebar.php';
+?>
+        <a href="/stakeholder/dashboard" class="inline-flex items-center text-sm font-medium text-blue-700 hover:underline mb-5"><- Back to Dashboard</a>
 
         <div class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
             <div class="flex items-start justify-between gap-4 mb-6">
@@ -28,15 +32,14 @@
             </div>
 
             <div class="flex flex-col md:flex-row gap-4">
-                <form method="post" action="/projects/<?= urlencode($project->id) ?>/accept">
+                <form method="post" action="/stakeholder/projects/<?= urlencode($project->id) ?>/accept">
                     <button class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-emerald-700 transition">Accept Plan</button>
                 </form>
 
-                <form method="post" action="/projects/<?= urlencode($project->id) ?>/feedback" class="flex-1 flex gap-2">
+                <form method="post" action="/stakeholder/projects/<?= urlencode($project->id) ?>/feedback" class="flex-1 flex gap-2">
                     <input type="text" name="feedback" placeholder="Request changes" class="flex-1 rounded-lg border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-blue-300 focus:outline-none" />
                     <button class="bg-amber-500 text-white px-5 py-2 rounded-lg font-medium hover:bg-amber-600 transition">Send</button>
                 </form>
             </div>
         </div>
-    </div>
-</div>
+<?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>

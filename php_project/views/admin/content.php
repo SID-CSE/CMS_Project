@@ -2,9 +2,23 @@
 /** @var array{id:string,email:string,name:string,role:string} $user */
 /** @var array<\App\Models\ProjectRequest> $projects */
 /** @var array<string,array<\App\Models\ProjectTask>> $tasksByProject */
+$roleLabel = 'Admin';
+$basePath = '/admin';
+$activePath = '/admin/content';
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-6xl p-6 lg:p-10">
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
+            <div class="mb-8">
+                <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Admin portal</div>
+                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
+                <p class="mt-2 text-sm text-slate-500">Content</p>
+            </div>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
+        </aside>
+
+        <main class="p-6 lg:p-10">
+            <div class="mx-auto max-w-6xl">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
@@ -48,6 +62,8 @@
                     </div>
                 </section>
             <?php endforeach; ?>
-        </div>
+            </div>
+        </main>
     </div>
 </div>
+

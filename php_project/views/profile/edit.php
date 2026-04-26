@@ -5,23 +5,12 @@
 /** @var string $roleLabel */
 /** @var string $basePath */
 /** @var string $profileKey */
+$activePath = $basePath . '/edit';
 ?>
+<?php require_once __DIR__ . '/../partials/role-topbar.php'; ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside class="border-r border-slate-200 bg-white p-6">
-            <div class="mb-8">
-                <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?> portal</div>
-                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
-                <p class="mt-2 text-sm text-slate-500">Edit profile</p>
-            </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <?php foreach ($tabs as $tab): ?>
-                    <a href="<?= htmlspecialchars($tab['to'], ENT_QUOTES, 'UTF-8') ?>" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]" aria-label="Open <?= htmlspecialchars($tab['label'], ENT_QUOTES, 'UTF-8') ?> page">
-                        <span><?= htmlspecialchars($tab['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </nav>
-        </aside>
+    <?php require_once __DIR__ . '/../partials/role-sidebar.php'; ?>
+            <div class="p-6 lg:p-10\">
 
         <main class="p-6 lg:p-10">
             <div class="mb-6 flex items-start justify-between gap-4">
@@ -33,6 +22,16 @@
             </div>
 
             <form method="post" action="<?= htmlspecialchars($basePath . '/save', ENT_QUOTES, 'UTF-8') ?>" class="space-y-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label for="displayName" class="mb-2 block text-sm font-medium text-slate-700">Display Name</label>
+                        <input id="displayName" type="text" name="displayName" value="<?= htmlspecialchars((string) ($profile['displayName'] ?? $user['displayName'] ?? $user['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                    </div>
+                    <div>
+                        <label for="avatarUrl" class="mb-2 block text-sm font-medium text-slate-700">Avatar Photo URL</label>
+                        <input id="avatarUrl" type="url" name="avatarUrl" value="<?= htmlspecialchars((string) ($profile['avatarUrl'] ?? $user['avatarUrl'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="https://..." />
+                    </div>
+                </div>
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
                         <label for="firstName" class="mb-2 block text-sm font-medium text-slate-700">First Name</label>
@@ -75,3 +74,4 @@
         </main>
     </div>
 </div>
+

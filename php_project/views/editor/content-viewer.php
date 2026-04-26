@@ -15,17 +15,31 @@ $timelineBadgeClass = static function (string $kind): string {
 };
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-6xl p-6 lg:p-10">
-        <div class="mb-6 flex items-start justify-between gap-4">
-            <div>
-                <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
-                <h2 class="mt-1 text-3xl font-bold text-slate-900"><?= htmlspecialchars($task->title, ENT_QUOTES, 'UTF-8') ?></h2>
-                <p class="mt-2 text-sm text-slate-500">Detailed content view and current version state.</p>
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside aria-label="Editor navigation" class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
+            <div class="mb-8">
+                <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Editor portal</div>
+                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
+                <p class="mt-2 text-sm text-slate-500">Content Viewer</p>
             </div>
-            <a href="/editor/content" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Content</a>
-        </div>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
+        </aside>
 
-        <section class="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
+        <main class="p-6 lg:p-10">
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
+                    <h2 class="mt-1 text-3xl font-bold text-slate-900"><?= htmlspecialchars($task->title, ENT_QUOTES, 'UTF-8') ?></h2>
+                    <p class="mt-2 text-sm text-slate-500">Detailed content view and current version state.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/editor/messages" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Messages</a>
+                    <a href="/editor/profile" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Profile</a>
+                    <a href="/editor/content" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Content</a>
+                </div>
+            </div>
+
+            <section class="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -70,7 +84,7 @@ $timelineBadgeClass = static function (string $kind): string {
                 </div>
             </div>
 
-            <aside class="space-y-6">
+            <aside aria-label="Related content" class="space-y-6">
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                     <h3 class="text-lg font-semibold text-slate-900">Timeline</h3>
                     <div class="mt-4 space-y-3">
@@ -91,11 +105,13 @@ $timelineBadgeClass = static function (string $kind): string {
                     <div class="mt-3 text-2xl font-bold">Version review</div>
                     <p class="mt-3 text-sm leading-6 text-blue-100">Use the version history view to inspect the content state after each submission or review.</p>
                     <div class="mt-5 flex flex-wrap gap-2">
-                        <a href="/content/<?= urlencode($task->id) ?>/versions" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#1734a1] hover:bg-blue-50">Open Versions</a>
-                        <a href="/projects/<?= urlencode($task->projectId) ?>/content" class="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Project Content</a>
+                        <a href="/editor/content/<?= urlencode($task->id) ?>/versions" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#1734a1] hover:bg-blue-50">Open Versions</a>
+                        <a href="/editor/projects/<?= urlencode($task->projectId) ?>/content" class="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">Project Content</a>
                     </div>
                 </div>
             </aside>
-        </section>
+            </section>
+        </main>
     </div>
 </div>
+

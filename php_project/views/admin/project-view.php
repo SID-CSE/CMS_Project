@@ -3,20 +3,19 @@
 /** @var \App\Models\ProjectRequest $project */
 /** @var array<\App\Models\ProjectTask> $tasks */
 /** @var array<string,array<\App\Models\TaskAttachment>> $attachmentsByTask */
+$roleLabel = 'Admin';
+$basePath = '/admin';
+$activePath = '/admin/projects';
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside class="border-r border-slate-200 bg-white p-6">
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
             <div class="mb-8">
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Admin portal</div>
                 <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
                 <p class="mt-2 text-sm text-slate-500">Project Detail</p>
             </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <a href="/admin/dashboard" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Dashboard</a>
-                <a href="/admin/projects" class="block rounded-xl bg-blue-50 px-4 py-3 text-[#1734a1]">Projects</a>
-                <a href="/admin/messages" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Messages</a>
-            </nav>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
         </aside>
 
         <main class="p-6 lg:p-10">
@@ -25,7 +24,11 @@
                     <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
                     <h2 class="mt-1 text-3xl font-bold text-slate-900"><?= htmlspecialchars($project->title, ENT_QUOTES, 'UTF-8') ?></h2>
                 </div>
-                <a href="/admin/projects" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Projects</a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/admin/messages" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Messages</a>
+                    <a href="/admin/profile" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Profile</a>
+                    <a href="/admin/projects" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Projects</a>
+                </div>
             </div>
 
             <section class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -107,4 +110,5 @@
         </main>
     </div>
 </div>
+
 

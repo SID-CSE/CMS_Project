@@ -3,20 +3,20 @@
 /** @var \App\Models\ProjectRequest $project */
 /** @var array<\App\Models\ProjectTask> $tasks */
 /** @var array<string,array<\App\Models\TaskAttachment>> $attachmentsByTask */
+
+$roleLabel = 'Stakeholder';
+$basePath = '/stakeholder';
+$activePath = '/stakeholder/projects';
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside class="border-r border-slate-200 bg-white p-6">
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside aria-label="Stakeholder navigation" class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
             <div class="mb-8">
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Stakeholder portal</div>
-                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
-                <p class="mt-2 text-sm text-slate-500">Project view</p>
+                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-white">Contify</h1>
+                <p class="mt-2 text-sm text-slate-400">Project view</p>
             </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <a href="/stakeholder/home" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Home</a>
-                <a href="/stakeholder/projects" class="block rounded-xl bg-blue-50 px-4 py-3 text-[#1734a1]">Projects</a>
-                <a href="/stakeholder/create-project-request" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Create Request</a>
-            </nav>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
         </aside>
 
         <main class="p-6 lg:p-10">
@@ -26,7 +26,11 @@
                     <h2 class="mt-1 text-3xl font-bold text-slate-900"><?= htmlspecialchars($project->title, ENT_QUOTES, 'UTF-8') ?></h2>
                     <p class="mt-2 text-sm text-slate-500">Project details and status timeline</p>
                 </div>
-                <a href="/stakeholder/projects" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Projects</a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/stakeholder/messages" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Messages</a>
+                    <a href="/stakeholder/profile" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Profile</a>
+                    <a href="/stakeholder/projects" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Projects</a>
+                </div>
             </div>
 
             <section class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -88,18 +92,18 @@
 
                 <div class="mt-6 flex flex-wrap gap-3">
                     <?php if ($project->status === 'PLAN_SENT'): ?>
-                        <form method="post" action="/projects/<?= urlencode($project->id) ?>/accept">
+                        <form method="post" action="/stakeholder/projects/<?= urlencode($project->id) ?>/accept">
                             <button class="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Accept Plan</button>
                         </form>
                     <?php endif; ?>
-                    <form method="post" action="/projects/<?= urlencode($project->id) ?>/feedback" class="flex flex-1 gap-3 min-w-65">
+                    <form method="post" action="/stakeholder/projects/<?= urlencode($project->id) ?>/feedback" class="flex flex-1 gap-3 min-w-65">
                         <input type="text" name="feedback" placeholder="Request changes" class="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                         <button class="rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600">Send</button>
                     </form>
                 </div>
 
                 <?php if ($project->status === 'DELIVERED' || $project->status === 'SIGNED_OFF'): ?>
-                    <form method="post" action="/projects/<?= urlencode($project->id) ?>/signoff" class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <form method="post" action="/stakeholder/projects/<?= urlencode($project->id) ?>/signoff" class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                         <h4 class="text-sm font-semibold uppercase tracking-[0.14em] text-emerald-800">Delivery Review</h4>
                         <div class="mt-3 grid gap-3 md:grid-cols-[200px_1fr]">
                             <div>
@@ -118,4 +122,5 @@
         </main>
     </div>
 </div>
+
 

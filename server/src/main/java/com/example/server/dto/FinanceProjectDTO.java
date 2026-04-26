@@ -1,7 +1,5 @@
 package com.example.server.dto;
 
-import java.math.BigDecimal;
-
 public class FinanceProjectDTO {
     private String projectId;
     private String projectTitle;

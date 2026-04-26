@@ -159,7 +159,7 @@ export default function RoleMessagesLayout({
           </div>
         </div>
 
-        <div className="max-h-[calc(100vh-290px)] overflow-y-auto px-3 py-3">
+        <div className="max-h-[calc(100vh-280px)] overflow-y-auto px-3 py-3">
           {loading ? (
             <div className="space-y-3 p-2">
               <div className="h-16 rounded-2xl bg-white/8" />
@@ -291,22 +291,39 @@ export default function RoleMessagesLayout({
 
             <div className="flex min-h-130 flex-col bg-[linear-gradient(180deg,#ece5dd_0%,#f8faf8_100%)]">
               <div className="flex-1 overflow-y-auto px-5 py-5">
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {messages.length ? (
-                    messages.map((message) => {
-                      const mine = message.senderId === currentUserId;
-                      return (
-                        <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                          <div className={`max-w-[78%] rounded-3xl px-4 py-3 shadow-sm ${mine ? "bg-[#d9fdd3] text-slate-900" : "bg-white text-slate-800"}`}>
-                            <p className="whitespace-pre-wrap text-sm leading-6">{message.body}</p>
-                            <div className="mt-2 flex items-center justify-end gap-2 text-[11px] text-slate-500">
-                              {message.projectTitle ? <span className="truncate">{message.projectTitle}</span> : null}
-                              <span>{formatDate(message.createdAt)} {formatTime(message.createdAt)}</span>
+                    (() => {
+                      const groups = [];
+                      let currentGroup = null;
+
+                      messages.forEach((message) => {
+                        if (!currentGroup || currentGroup.senderId !== message.senderId) {
+                          currentGroup = { senderId: message.senderId, messages: [] };
+                          groups.push(currentGroup);
+                        }
+                        currentGroup.messages.push(message);
+                      });
+
+                      return groups.map((group) => {
+                        const mine = group.senderId === currentUserId;
+                        return (
+                          <div key={`${group.senderId}-${group.messages[0].id}`} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                            <div className={`flex max-w-[78%] flex-col gap-2 ${mine ? "items-end" : "items-start"}`}>
+                              {group.messages.map((message) => (
+                                <div key={message.id} className={`rounded-3xl px-4 py-3 shadow-sm ${mine ? "bg-[#d9fdd3] text-slate-900" : "bg-white text-slate-800"}`}>
+                                  <p className="whitespace-pre-wrap text-sm leading-6">{message.body}</p>
+                                  <div className="mt-2 flex items-center justify-end gap-2 text-[11px] text-slate-500">
+                                    {message.projectTitle ? <span className="truncate">{message.projectTitle}</span> : null}
+                                    <span>{formatDate(message.createdAt)} {formatTime(message.createdAt)}</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      });
+                    })()
                   ) : (
                     <div className="flex h-full min-h-80 items-center justify-center text-sm text-slate-500">No messages in this thread yet.</div>
                   )}

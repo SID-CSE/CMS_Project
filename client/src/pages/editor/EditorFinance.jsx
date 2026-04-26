@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import EditorNavbar from "../../components/Navbar/EditorNavbar";
 import EditorSidebar from "../../components/Sidebar/EditorSidebar";
 import RoleFinancePage from "../../components/finance/RoleFinancePage";
-import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest } from "../../services/financeService";
+import { createFinanceTransaction, getFinanceState, recordFinanceAction, saveFinanceState, updateFinanceRequest, getFinanceCycle, closeCycle } from "../../services/financeService";
 
 const EMPTY_STATE = {
   stats: { total_spent: "₹0", pending: "₹0", last_payment: "₹0" },
@@ -15,10 +15,15 @@ const EMPTY_STATE = {
 export default function EditorFinance() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [state, setState] = useState(EMPTY_STATE);
+  const [cycle, setCycle] = useState(null);
 
   const loadState = async () => {
-    const next = await getFinanceState("editor");
-    setState(next || EMPTY_STATE);
+    const [financeState, cycleData] = await Promise.all([
+      getFinanceState("editor"),
+      getFinanceCycle("editor"),
+    ]);
+    setState(financeState || EMPTY_STATE);
+    setCycle(cycleData || null);
   };
 
   useEffect(() => {
@@ -44,9 +49,14 @@ export default function EditorFinance() {
             counterparties={state.counterparties || []}
             primaryActionLabel="Request Payout"
             primaryActionHint="Request a payout from admin for completed editorial work."
+            cycle={cycle}
             onCreateTransaction={async (transaction) => sync(await createFinanceTransaction("editor", transaction))}
             onUpdateRequest={async (requestId, patch) => sync(await updateFinanceRequest("editor", requestId, patch))}
             onRecordAction={async (transactionId, patch) => sync(await recordFinanceAction("editor", transactionId, patch))}
+            onCloseCycle={async (cycleId) => {
+              await closeCycle("editor", cycleId);
+              await loadState();
+            }}
             allowCreate={false}
           />
         </div>
@@ -54,5 +64,3 @@ export default function EditorFinance() {
     </div>
   );
 }
-
-

@@ -55,6 +55,18 @@ final class UserRepository
         return $row ? User::fromArray($row) : null;
     }
 
+    /**
+     * @return array<int, User>
+     */
+    public function findByRole(string $role): array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM users WHERE role = :role AND COALESCE(is_active, 1) = 1 ORDER BY name ASC, email ASC');
+        $stmt->execute(['role' => strtoupper($role)]);
+        $rows = $stmt->fetchAll();
+
+        return array_map(static fn (array $row): User => User::fromArray($row), $rows ?: []);
+    }
+
     public function create(string $email, string $name, string $role, string $passwordHash): User
     {
         $id = $this->uuid();
@@ -90,4 +102,3 @@ final class UserRepository
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 }
-

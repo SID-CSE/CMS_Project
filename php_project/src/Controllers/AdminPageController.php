@@ -71,6 +71,7 @@ final class AdminPageController extends Controller
             'user' => Session::get('auth_user', []),
             'projects' => $projects,
             'tasksByProject' => $tasksByProject,
+            'editors' => $this->users->findByRole('EDITOR'),
         ]);
     }
     public function users(): void
@@ -361,4 +362,3 @@ final class AdminPageController extends Controller
         return $attachmentsByTask;
     }
 }
-

@@ -2,30 +2,25 @@
 /** @var array{id:string,email:string,name:string,role:string} $user */
 /** @var array<\App\Models\ProjectRequest> $projects */
 /** @var array<string,array<\App\Models\ProjectTask>> $tasksByProject */
+/** @var array<int,\App\Models\User> $editors */
+$roleLabel = 'Admin';
+$basePath = '/admin';
+$activePath = '/admin/projects';
 ?>
+<?php require_once __DIR__ . '/../partials/role-topbar.php'; ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside aria-label="Admin navigation" class="border-r border-slate-200 bg-white p-6">
-            <div class="mb-8">
-                <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Admin portal</div>
-                <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
-                <p class="mt-2 text-sm text-slate-500">Projects</p>
-            </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <a href="/admin/dashboard" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Dashboard</a>
-                <a href="/admin/projects" class="block rounded-xl bg-blue-50 px-4 py-3 text-[#1734a1]">Projects</a>
-                <a href="/admin/users" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Users</a>
-                <a href="/admin/messages" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Messages</a>
-            </nav>
-        </aside>
-
-        <main class="p-6 lg:p-10">
+    <?php require_once __DIR__ . '/../partials/role-sidebar.php'; ?>
+            <div class="p-6 lg:p-10">
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <p class="text-sm font-medium text-slate-500">Signed in as <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
                     <h2 class="mt-1 text-3xl font-bold text-slate-900">Admin Projects</h2>
                 </div>
-                <a href="/admin/dashboard" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Dashboard</a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/admin/messages" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Messages</a>
+                    <a href="/admin/profile" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Profile</a>
+                    <a href="/admin/dashboard" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Back to Dashboard</a>
+                </div>
             </div>
 
             <div class="space-y-5">
@@ -56,7 +51,26 @@
                                 <form method="post" action="/admin/projects/<?= urlencode($project->id) ?>/tasks" class="mt-3 grid gap-3">
                                     <input name="title" required placeholder="Task title" class="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                                     <textarea name="description" rows="2" placeholder="Task details" class="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
-                                    <input name="assignee_email" type="email" required placeholder="editor@contify.com" class="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                                    <div class="grid gap-2 md:grid-cols-[1fr_1fr]">
+                                        <select
+                                            name="assignee_picker"
+                                            class="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            onchange="const target = this.form.querySelector('[name=assignee_email]'); if (target && this.value) target.value = this.value;"
+                                        >
+                                            <option value="">Select editor</option>
+                                            <?php foreach ($editors as $editor): ?>
+                                                <option value="<?= htmlspecialchars($editor->email, ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars($editor->name !== '' ? $editor->name : $editor->email, ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($editor->email, ENT_QUOTES, 'UTF-8') ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input name="assignee_email" type="email" list="editor-emails" required placeholder="editor@contify.com" class="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                                        <datalist id="editor-emails">
+                                            <?php foreach ($editors as $editor): ?>
+                                                <option value="<?= htmlspecialchars($editor->email, ENT_QUOTES, 'UTF-8') ?>" label="<?= htmlspecialchars($editor->name, ENT_QUOTES, 'UTF-8') ?>"></option>
+                                            <?php endforeach; ?>
+                                        </datalist>
+                                    </div>
                                     <button class="rounded-xl bg-[#1734a1] px-4 py-2 text-sm font-semibold text-white hover:bg-[#132b86]">Assign</button>
                                 </form>
                             </div>
@@ -103,7 +117,7 @@
                     </section>
                 <?php endforeach; ?>
             </div>
-        </main>
-    </div>
+            </div>
+    <?php require_once __DIR__ . '/../partials/role-sidebar-end.php'; ?>
 </div>
 

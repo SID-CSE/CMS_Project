@@ -20,7 +20,7 @@ final class TaskWorkflowController extends Controller
 {
     private const DASHBOARD_PATH = '/dashboard';
     private const ADMIN_PROJECTS_PATH = '/admin/projects';
-    private const EDITOR_PROJECTS_PATH = '/projects';
+    private const EDITOR_PROJECTS_PATH = '/editor/projects';
     private const PROJECT_SIGNED_OFF_TITLE = 'Project Signed Off';
 
     private ProjectRequestRepository $projects;
@@ -301,9 +301,12 @@ final class TaskWorkflowController extends Controller
         return strtoupper((string) ($user['role'] ?? '')) === $role;
     }
 
-    private function pushWorkflowMessage(string $senderId, string $recipientId, string $subject, string $body, ?string $projectId = null): void
+    private function pushWorkflowMessage(string $senderIdentifier, string $recipientIdentifier, string $subject, string $body, ?string $projectId = null): void
     {
-        if ($senderId === '' || $recipientId === '') {
+        $senderId = $this->resolveUserId($senderIdentifier);
+        $recipientId = $this->resolveUserId($recipientIdentifier);
+
+        if ($senderId === null || $recipientId === null || $senderId === $recipientId) {
             return;
         }
 
@@ -313,6 +316,31 @@ final class TaskWorkflowController extends Controller
 
     private function storeTaskAttachment(string $taskId): void
     {
+        $cloudPublicId = trim((string) ($_POST['cloud_public_id'] ?? ''));
+        $cloudUrl = trim((string) ($_POST['cloud_secure_url'] ?? ''));
+        if ($cloudPublicId !== '' && $cloudUrl !== '') {
+            $originalName = trim((string) ($_POST['cloud_original_name'] ?? 'upload'));
+            $storedName = trim((string) ($_POST['cloud_stored_name'] ?? $originalName));
+            $mimeType = trim((string) ($_POST['cloud_mime_type'] ?? '')) ?: null;
+            $resourceType = trim((string) ($_POST['cloud_resource_type'] ?? '')) ?: null;
+            $fileType = trim((string) ($_POST['cloud_file_type'] ?? '')) ?: null;
+            $streamUrl = trim((string) ($_POST['cloud_stream_url'] ?? $cloudUrl)) ?: $cloudUrl;
+
+            $this->attachments->create(
+                $taskId,
+                $originalName !== '' ? $originalName : 'upload',
+                $storedName !== '' ? $storedName : $originalName,
+                $cloudUrl,
+                $mimeType,
+                'cloudinary',
+                $cloudPublicId,
+                $resourceType,
+                $fileType,
+                $streamUrl
+            );
+            return;
+        }
+
         if (!isset($_FILES['attachment']) || !is_array($_FILES['attachment'])) {
             return;
         }
@@ -341,9 +369,54 @@ final class TaskWorkflowController extends Controller
                 $originalName,
                 $storedName,
                 $relativePath,
-                (string) ($upload['type'] ?? null)
+                (string) ($upload['type'] ?? null),
+                'local',
+                null,
+                null,
+                $this->detectFileType((string) ($upload['type'] ?? ''), $originalName),
+                $relativePath
             );
         }
     }
-}
 
+    private function detectFileType(string $mimeType, string $fileName): string
+    {
+        $mimeType = strtolower(trim($mimeType));
+        if (str_starts_with($mimeType, 'video/')) {
+            return 'VIDEO';
+        }
+
+        if (str_starts_with($mimeType, 'image/')) {
+            return 'IMAGE';
+        }
+
+        $extension = strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION));
+        if ($mimeType === 'application/pdf' || $extension === 'pdf') {
+            return 'PDF';
+        }
+
+        return 'FILE';
+    }
+
+    private function resolveUserId(string $identifier): ?string
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            return null;
+        }
+
+        $user = $this->users->findById($identifier);
+        if ($user !== null) {
+            return $user->id;
+        }
+
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->users->findByEmail(strtolower($identifier));
+            if ($user !== null) {
+                return $user->id;
+            }
+        }
+
+        return null;
+    }
+}

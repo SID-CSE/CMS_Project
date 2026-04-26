@@ -5,22 +5,19 @@
 /** @var array<string,array<\App\Models\TaskAttachment>> $attachmentsByTask */
 /** @var int $unreadNotifications */
 /** @var int $unreadThreads */
+$roleLabel = 'Editor';
+$basePath = '/editor';
+$activePath = '/editor/content';
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside class="border-r border-slate-200 bg-white p-6">
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
             <div class="mb-8">
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Editor portal</div>
                 <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
                 <p class="mt-2 text-sm text-slate-500">Content library</p>
             </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <a href="/editor/dashboard" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Dashboard</a>
-                <a href="/projects" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Projects</a>
-                <a href="/editor/content" class="block rounded-xl bg-blue-50 px-4 py-3 text-[#1734a1]">My Content</a>
-                <a href="/notifications" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Notifications</a>
-                <a href="/editor/messages" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Messages</a>
-            </nav>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
         </aside>
 
         <main class="p-6 lg:p-10">
@@ -31,8 +28,9 @@
                     <p class="mt-2 text-sm text-slate-500">Tasks, submissions, and versions tied to your work queue.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <a href="/notifications" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Notifications<?php if (($unreadNotifications ?? 0) > 0): ?> (<?= (int) $unreadNotifications ?>)<?php endif; ?></a>
+                    <a href="/editor/notifications" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Notifications<?php if (($unreadNotifications ?? 0) > 0): ?> (<?= (int) $unreadNotifications ?>)<?php endif; ?></a>
                     <a href="/editor/messages" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Messages<?php if (($unreadThreads ?? 0) > 0): ?> (<?= (int) $unreadThreads ?>)<?php endif; ?></a>
+                    <a href="/editor/profile" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-white">Profile</a>
                 </div>
             </div>
 
@@ -57,8 +55,8 @@
                             </div>
                             <p class="mt-3 line-clamp-3 text-sm text-slate-600"><?= htmlspecialchars($task->description, ENT_QUOTES, 'UTF-8') ?></p>
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <a href="/content/<?= urlencode($task->id) ?>/view" class="rounded-lg bg-[#1734a1] px-3 py-2 text-xs font-semibold text-white hover:bg-[#132b86]">Open Viewer</a>
-                                <a href="/content/<?= urlencode($task->id) ?>/versions" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Versions</a>
+                                <a href="/editor/content/<?= urlencode($task->id) ?>/view" class="rounded-lg bg-[#1734a1] px-3 py-2 text-xs font-semibold text-white hover:bg-[#132b86]">Open Viewer</a>
+                                <a href="/editor/content/<?= urlencode($task->id) ?>/versions" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Versions</a>
                             </div>
                             <?php if (!empty($attachmentsByTask[$task->id])): ?>
                                 <div class="mt-4 rounded-xl bg-slate-50 p-3">
@@ -83,7 +81,7 @@
                         <h3 class="text-lg font-semibold text-slate-900">Recent Projects</h3>
                         <p class="text-sm text-slate-500">Cross-check the full project context around your content.</p>
                     </div>
-                    <a href="/projects" class="text-sm font-semibold text-[#1734a1] hover:underline">View Projects</a>
+                    <a href="/editor/projects" class="text-sm font-semibold text-[#1734a1] hover:underline">View Projects</a>
                 </div>
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <?php foreach ($projects as $project): ?>
@@ -103,3 +101,4 @@
         </main>
     </div>
 </div>
+

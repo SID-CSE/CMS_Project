@@ -4,25 +4,21 @@
 /** @var string $roleLabel */
 /** @var string $basePath */
 /** @var bool $allowCreate */
+$activePath = $basePath . '/finance';
 $stats = $state['stats'] ?? ['total_spent' => '₹0', 'pending' => '₹0', 'last_payment' => '₹0'];
 $transactions = $state['transactions'] ?? [];
 $requests = $state['requests'] ?? [];
 $counterparties = $state['counterparties'] ?? [];
 ?>
 <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside class="border-r border-slate-200 bg-white p-6">
+    <div class="grid min-h-screen lg:grid-cols-[320px_1fr]">
+        <aside class="border-r border-slate-800 bg-slate-950 px-5 py-6 text-white shadow-2xl">
             <div class="mb-8">
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?> portal</div>
                 <h1 class="mt-2 text-2xl font-black italic tracking-tighter text-[#1734a1]">Contify</h1>
                 <p class="mt-2 text-sm text-slate-500">Finance</p>
             </div>
-            <nav class="space-y-2 text-sm font-medium text-slate-700">
-                <a href="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8') ?>/dashboard" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Dashboard</a>
-                <a href="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8') ?>/profile" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Profile</a>
-                <a href="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8') ?>/messages" class="block rounded-xl px-4 py-3 hover:bg-blue-50 hover:text-[#1734a1]">Messages</a>
-                <a href="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8') ?>/finance" class="block rounded-xl bg-blue-50 px-4 py-3 text-[#1734a1]">Finance</a>
-            </nav>
+            <?php require_once __DIR__ . '/../partials/role-sidebar-nav.php'; ?>
         </aside>
 
         <main class="p-6 lg:p-10">
@@ -86,4 +82,5 @@ $counterparties = $state['counterparties'] ?? [];
         </main>
     </div>
 </div>
+
 

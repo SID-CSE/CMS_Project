@@ -75,13 +75,14 @@ final class MessageRepository
         $stmt = $this->db->prepare(
             'SELECT *
              FROM message_threads
-             WHERE participant_a_id = :user_id OR participant_b_id = :user_id
+             WHERE participant_a_id = :participant_a_id OR participant_b_id = :participant_b_id
              ORDER BY COALESCE(last_message_at, updated_at) DESC
-             LIMIT :limit'
+             LIMIT ' . (int) $limit
         );
-        $stmt->bindValue(':user_id', $userId);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
+        $stmt->execute([
+            'participant_a_id' => $userId,
+            'participant_b_id' => $userId,
+        ]);
 
         $rows = $stmt->fetchAll();
         $threads = array_map(static fn (array $row): MessageThread => MessageThread::fromArray($row), $rows ?: []);
@@ -122,18 +123,33 @@ final class MessageRepository
 
     public function findThreadByParticipants(string $participantAId, string $participantBId, ?string $projectId = null, ?string $subject = null): ?MessageThread
     {
-        $stmt = $this->db->prepare(
-            'SELECT * FROM message_threads
-             WHERE ((participant_a_id = :a AND participant_b_id = :b) OR (participant_a_id = :b AND participant_b_id = :a))
-               AND ((:project_id IS NULL AND project_id IS NULL) OR project_id = :project_id)
-               AND ((:subject IS NULL AND subject IS NULL) OR subject = :subject)
-             LIMIT 1'
-        );
-        $stmt->bindValue(':a', $participantAId);
-        $stmt->bindValue(':b', $participantBId);
-        $stmt->bindValue(':project_id', $projectId);
-        $stmt->bindValue(':subject', $subject);
-        $stmt->execute();
+        $conditions = [
+            '((participant_a_id = :participant_a_id_1 AND participant_b_id = :participant_b_id_1) OR (participant_a_id = :participant_a_id_2 AND participant_b_id = :participant_b_id_2))',
+        ];
+        $params = [
+            ':participant_a_id_1' => $participantAId,
+            ':participant_b_id_1' => $participantBId,
+            ':participant_a_id_2' => $participantBId,
+            ':participant_b_id_2' => $participantAId,
+        ];
+
+        if ($projectId !== null) {
+            $conditions[] = 'project_id = :project_id';
+            $params[':project_id'] = $projectId;
+        } else {
+            $conditions[] = 'project_id IS NULL';
+        }
+
+        if ($subject !== null) {
+            $conditions[] = 'subject = :subject';
+            $params[':subject'] = $subject;
+        } else {
+            $conditions[] = 'subject IS NULL';
+        }
+
+        $query = 'SELECT * FROM message_threads WHERE ' . implode(' AND ', $conditions) . ' LIMIT 1';
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ? MessageThread::fromArray($row) : null;
@@ -156,18 +172,19 @@ final class MessageRepository
     public function getUserContacts(string $userId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT DISTINCT
+            'SELECT
                 u.id,
                 u.email,
                 u.name,
                 u.role
              FROM users u
-             INNER JOIN message_threads t ON (t.participant_a_id = u.id OR t.participant_b_id = u.id)
-             WHERE (t.participant_a_id = :user_id OR t.participant_b_id = :user_id)
-               AND u.id <> :user_id
-             ORDER BY u.name ASC'
+             WHERE u.id <> :exclude_user_id
+               AND COALESCE(u.is_active, 1) = 1
+             ORDER BY u.name ASC, u.email ASC'
         );
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute([
+            'exclude_user_id' => $userId,
+        ]);
         $rows = $stmt->fetchAll();
 
         return $rows ?: [];
@@ -179,11 +196,15 @@ final class MessageRepository
             'SELECT COUNT(DISTINCT t.id)
              FROM message_threads t
              INNER JOIN messages m ON m.thread_id = t.id
-             WHERE (t.participant_a_id = :user_id OR t.participant_b_id = :user_id)
+             WHERE (t.participant_a_id = :participant_a_id OR t.participant_b_id = :participant_b_id)
                AND m.is_read = 0
-               AND m.sender_id <> :user_id'
+               AND m.sender_id <> :sender_id'
         );
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute([
+            'participant_a_id' => $userId,
+            'participant_b_id' => $userId,
+            'sender_id' => $userId,
+        ]);
 
         return (int) $stmt->fetchColumn();
     }
