@@ -180,36 +180,63 @@ export default function AdminProjectDetail() {
               </button>
             </div>
 
+            <p className="mt-2 text-sm text-slate-500">
+              Fill proposal details clearly so the stakeholder can approve without extra clarification.
+            </p>
+
             <form onSubmit={handleCreatePlan} className="mt-4 grid gap-4 md:grid-cols-2">
-              <input
-                type="date"
-                required
-                value={planForm.timelineStart}
-                onChange={(e) => setPlanForm((prev) => ({ ...prev, timelineStart: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="date"
-                required
-                value={planForm.timelineEnd}
-                onChange={(e) => setPlanForm((prev) => ({ ...prev, timelineEnd: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <textarea
-                required
-                value={planForm.notes}
-                onChange={(e) => setPlanForm((prev) => ({ ...prev, notes: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-                rows={3}
-                placeholder="Proposal notes for stakeholder"
-              />
-              <textarea
-                value={planForm.milestonesRaw}
-                onChange={(e) => setPlanForm((prev) => ({ ...prev, milestonesRaw: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-                rows={3}
-                placeholder="Milestones (one per line)"
-              />
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Project title (reference)</span>
+                <input
+                  type="text"
+                  value={project?.title || `Project ${id}`}
+                  readOnly
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Timeline start date</span>
+                <input
+                  type="date"
+                  required
+                  value={planForm.timelineStart}
+                  onChange={(e) => setPlanForm((prev) => ({ ...prev, timelineStart: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Timeline end date</span>
+                <input
+                  type="date"
+                  required
+                  value={planForm.timelineEnd}
+                  onChange={(e) => setPlanForm((prev) => ({ ...prev, timelineEnd: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Proposal summary for stakeholder</span>
+                <textarea
+                  required
+                  value={planForm.notes}
+                  onChange={(e) => setPlanForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  rows={3}
+                  placeholder="Example: We will deliver 3 Instagram reels, 2 banner designs, and homepage copy. Review checkpoints every Friday."
+                />
+                <p className="text-xs text-slate-500">Write scope, expected deliverables, and review schedule in plain language.</p>
+              </label>
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Milestones (one line per milestone)</span>
+                <textarea
+                  value={planForm.milestonesRaw}
+                  onChange={(e) => setPlanForm((prev) => ({ ...prev, milestonesRaw: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  rows={4}
+                  placeholder={"Kickoff call\nDraft delivery\nClient review\nFinal delivery"}
+                />
+                <p className="text-xs text-slate-500">Each line becomes a milestone tied to the timeline end date.</p>
+              </label>
               <div className="md:col-span-2 flex items-center gap-3">
                 <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                   Create / Update Proposal
@@ -225,52 +252,80 @@ export default function AdminProjectDetail() {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Assign New Task</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              Create a task with clear deliverable instructions so the editor can submit the right output in one attempt.
+            </p>
             <form onSubmit={handleCreateTask} className="mt-4 grid gap-4 md:grid-cols-2">
-              <input
-                required
-                value={taskForm.title}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                placeholder="Task title"
-              />
-              <input
-                required
-                type="date"
-                value={taskForm.deadline}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, deadline: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <select
-                value={taskForm.contentType}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, contentType: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              >
-                <option value="VIDEO">VIDEO</option>
-                <option value="IMAGE">IMAGE</option>
-                <option value="DESIGN">DESIGN</option>
-                <option value="COPY">COPY</option>
-                <option value="OTHER">OTHER</option>
-              </select>
-              <select
-                required
-                value={taskForm.assignedTo}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              >
-                {editors.map((editor) => (
-                  <option key={editor.id} value={editor.id}>
-                    {editor.name} ({editor.email})
-                  </option>
-                ))}
-              </select>
-              <textarea
-                required
-                value={taskForm.description}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-                rows={3}
-                placeholder="Task description"
-              />
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Project title (reference)</span>
+                <input
+                  type="text"
+                  value={project?.title || `Project ${id}`}
+                  readOnly
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Task title</span>
+                <input
+                  required
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="Example: Instagram reel - product teaser (15 sec)"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Submission deadline</span>
+                <input
+                  required
+                  type="date"
+                  value={taskForm.deadline}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, deadline: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Content type</span>
+                <select
+                  value={taskForm.contentType}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, contentType: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="VIDEO">VIDEO</option>
+                  <option value="IMAGE">IMAGE</option>
+                  <option value="DESIGN">DESIGN</option>
+                  <option value="COPY">COPY</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Assign editor</span>
+                <select
+                  required
+                  value={taskForm.assignedTo}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  {editors.map((editor) => (
+                    <option key={editor.id} value={editor.id}>
+                      {editor.name} ({editor.email})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 md:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Task instructions</span>
+                <textarea
+                  required
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  rows={4}
+                  placeholder="Include objective, required format, dimensions/duration, tone, reference links, and acceptance criteria. Example: 1080x1920, under 15 seconds, upbeat style, include CTA in final 3 seconds."
+                />
+                <p className="text-xs text-slate-500">Tip: Write the output format and approval checklist explicitly.</p>
+              </label>
               <div className="md:col-span-2">
                 <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                   Create Task

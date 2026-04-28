@@ -106,6 +106,17 @@ php_errors.log
 # Session files (should not be committed)
 php_project/sessions/
 
+# Local test artifacts and generated snapshots
+php_project/*cookie*.txt
+php_project/*_out.html
+php_project/*_live.html
+php_project/dev_*.html
+php_project/public/uploads/
+
+# Keep local test credentials out of git
+Credentials.txt
+Credentials.local.txt
+
 # ============================================
 # MAVEN / SPRING PROJECT SPECIFIC (server/)
 # ============================================

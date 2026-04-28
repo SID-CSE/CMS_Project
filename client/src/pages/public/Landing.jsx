@@ -69,7 +69,7 @@ const Landing = () => {
           <h2 className="text-4xl md:text-5xl font-bold leading-tight text-slate-900">Where Content <br /> Meets Collaboration</h2>
           <p className="text-lg text-slate-600 max-w-md">The all-in-one ecosystem for stakeholders to commission, admins to manage, and editors to produce world-class video content.</p>
           <div className="flex gap-4 pt-4">
-            <button onClick={() => navigate('/roles')} className="bg-[#1734a1] text-white px-6 py-3 rounded-lg font-medium shadow-md hover:bg-blue-800 transition">Find Top Talent</button>
+            <button onClick={() => navigate('/roles')} className="bg-[#1734a1] text-white px-6 py-3 rounded-lg font-medium shadow-md hover:bg-blue-800 transition">Find your Role</button>
             <button className="bg-[#4d6ecf] text-white px-6 py-3 rounded-lg font-medium shadow-md">Find Your Next Project</button>
           </div>
         </div>

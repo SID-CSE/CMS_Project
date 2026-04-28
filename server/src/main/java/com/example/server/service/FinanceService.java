@@ -12,9 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.server.dto.CreateFinanceRequestDTO;
+import com.example.server.dto.DistributeFinanceRequestDTO;
 import com.example.server.dto.FinanceDistributionDTO;
 import com.example.server.dto.FinanceProjectDTO;
 import com.example.server.dto.FinanceRequestDTO;
+import com.example.server.dto.UserSummaryDTO;
 import com.example.server.entity.FinanceDistribution;
 import com.example.server.entity.FinanceRequest;
 import com.example.server.entity.ProjectRequest;
@@ -144,7 +146,7 @@ public class FinanceService {
     }
 
     @Transactional
-    public FinanceRequestDTO distributeRequest(String requestId, String adminEmail) {
+    public FinanceRequestDTO distributeRequest(String requestId, String adminEmail, DistributeFinanceRequestDTO dto) {
         User admin = resolveUser(adminEmail, User.UserRole.ADMIN, "Admin");
         FinanceRequest request = financeRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Finance request not found with id: " + requestId));
@@ -156,41 +158,88 @@ public class FinanceService {
             throw new RuntimeException("Finance request must be PAID before distribution");
         }
 
-        List<Task> projectTasks = taskRepository.findByProjectId(request.getProjectId());
-        Map<String, User> contributors = new LinkedHashMap<>();
-        for (Task task : projectTasks) {
-            if (task.getAssignedEditor() != null) {
-                contributors.put(task.getAssignedEditor().getId(), task.getAssignedEditor());
-            }
-        }
+        Map<String, User> contributors = collectProjectContributors(request.getProjectId());
 
         if (contributors.isEmpty()) {
             throw new RuntimeException("No contributors found for this project");
         }
 
         BigDecimal total = request.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal companyProfit = request.getCompanyProfitAmount().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal companyProfit = dto != null && dto.getCompanyProfitAmount() != null
+                ? dto.getCompanyProfitAmount().setScale(2, RoundingMode.HALF_UP)
+                : request.getCompanyProfitAmount().setScale(2, RoundingMode.HALF_UP);
+        if (companyProfit.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Company amount cannot be negative");
+        }
         BigDecimal workerPool = total.subtract(companyProfit).setScale(2, RoundingMode.HALF_UP);
         if (workerPool.compareTo(BigDecimal.ZERO) < 0) {
             throw new RuntimeException("Company profit cannot exceed the total amount");
         }
 
-        BigDecimal equalShare = workerPool.divide(BigDecimal.valueOf(contributors.size()), 2, RoundingMode.DOWN);
-        BigDecimal allocatedToWorkers = equalShare.multiply(BigDecimal.valueOf(contributors.size())).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal remainder = workerPool.subtract(allocatedToWorkers).setScale(2, RoundingMode.HALF_UP);
-
         List<FinanceDistribution> distributions = new ArrayList<>();
-        for (User contributor : contributors.values()) {
-            FinanceDistribution distribution = new FinanceDistribution();
-            distribution.setRequestId(request.getId());
-            distribution.setRequest(request);
-            distribution.setRecipientUserId(contributor.getId());
-            distribution.setRecipientUser(contributor);
-            distribution.setRecipientType("WORKER");
-            distribution.setRecipientName(contributor.getName() != null ? contributor.getName() : contributor.getUsername());
-            distribution.setAmount(equalShare);
-            distribution.setStatus("PAID");
-            distributions.add(distribution);
+
+        boolean hasCustomShares = dto != null && dto.getEmployeeShares() != null && !dto.getEmployeeShares().isEmpty();
+        if (hasCustomShares) {
+            List<DistributeFinanceRequestDTO.EmployeeShareDTO> shares = dto.getEmployeeShares();
+            Map<String, BigDecimal> normalizedShares = new LinkedHashMap<>();
+            for (DistributeFinanceRequestDTO.EmployeeShareDTO share : shares) {
+                if (share == null || share.getRecipientUserId() == null || share.getRecipientUserId().isBlank()) {
+                    throw new RuntimeException("Recipient user is required for each employee share");
+                }
+                if (share.getAmount() == null || share.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new RuntimeException("Each employee share amount must be greater than zero");
+                }
+                String recipientId = share.getRecipientUserId().trim();
+                User contributor = contributors.get(recipientId);
+                if (contributor == null) {
+                    throw new RuntimeException("Selected employee is not part of this project's contributors");
+                }
+                BigDecimal shareAmount = share.getAmount().setScale(2, RoundingMode.HALF_UP);
+                normalizedShares.put(recipientId, shareAmount);
+            }
+
+            BigDecimal customTotal = normalizedShares.values().stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            if (customTotal.compareTo(workerPool) != 0) {
+                throw new RuntimeException("Total employee payouts must equal worker pool amount");
+            }
+
+            for (Map.Entry<String, BigDecimal> entry : normalizedShares.entrySet()) {
+                User contributor = contributors.get(entry.getKey());
+                FinanceDistribution distribution = new FinanceDistribution();
+                distribution.setRequestId(request.getId());
+                distribution.setRequest(request);
+                distribution.setRecipientUserId(contributor.getId());
+                distribution.setRecipientUser(contributor);
+                distribution.setRecipientType("WORKER");
+                distribution.setRecipientName(contributor.getName() != null ? contributor.getName() : contributor.getUsername());
+                distribution.setAmount(entry.getValue());
+                distribution.setStatus("PAID");
+                distribution.setPaidAt(LocalDateTime.now());
+                distributions.add(distribution);
+            }
+        } else {
+            BigDecimal equalShare = workerPool.divide(BigDecimal.valueOf(contributors.size()), 2, RoundingMode.DOWN);
+            BigDecimal allocatedToWorkers = equalShare.multiply(BigDecimal.valueOf(contributors.size())).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal remainder = workerPool.subtract(allocatedToWorkers).setScale(2, RoundingMode.HALF_UP);
+
+            for (User contributor : contributors.values()) {
+                FinanceDistribution distribution = new FinanceDistribution();
+                distribution.setRequestId(request.getId());
+                distribution.setRequest(request);
+                distribution.setRecipientUserId(contributor.getId());
+                distribution.setRecipientUser(contributor);
+                distribution.setRecipientType("WORKER");
+                distribution.setRecipientName(contributor.getName() != null ? contributor.getName() : contributor.getUsername());
+                distribution.setAmount(equalShare);
+                distribution.setStatus("PAID");
+                distribution.setPaidAt(LocalDateTime.now());
+                distributions.add(distribution);
+            }
+
+            companyProfit = companyProfit.add(remainder).setScale(2, RoundingMode.HALF_UP);
         }
 
         FinanceDistribution companyDistribution = new FinanceDistribution();
@@ -198,11 +247,13 @@ public class FinanceService {
         companyDistribution.setRequest(request);
         companyDistribution.setRecipientType("COMPANY");
         companyDistribution.setRecipientName("Contify Company Profit");
-        companyDistribution.setAmount(companyProfit.add(remainder).setScale(2, RoundingMode.HALF_UP));
+        companyDistribution.setAmount(companyProfit);
         companyDistribution.setStatus("PAID");
+        companyDistribution.setPaidAt(LocalDateTime.now());
         distributions.add(companyDistribution);
 
         financeDistributionRepository.saveAll(distributions);
+        request.setCompanyProfitAmount(companyProfit);
         request.setStatus(FinanceRequest.FinanceStatus.DISTRIBUTED);
         request.setDistributedAt(LocalDateTime.now());
         financeRequestRepository.save(request);
@@ -279,8 +330,34 @@ public class FinanceService {
         dto.setPaidAt(request.getPaidAt());
         dto.setDistributedAt(request.getDistributedAt());
         dto.setCreatedAt(request.getCreatedAt());
+        dto.setEligibleRecipients(buildEligibleRecipients(request.getProjectId()));
         dto.setDistributions(financeDistributionRepository.findByRequestIdOrderByCreatedAtAsc(request.getId()).stream().map(this::mapDistribution).toList());
         return dto;
+    }
+
+    private Map<String, User> collectProjectContributors(String projectId) {
+        List<Task> projectTasks = taskRepository.findByProjectId(projectId);
+        Map<String, User> contributors = new LinkedHashMap<>();
+        for (Task task : projectTasks) {
+            if (task.getAssignedEditor() != null) {
+                contributors.put(task.getAssignedEditor().getId(), task.getAssignedEditor());
+            }
+        }
+        return contributors;
+    }
+
+    private List<UserSummaryDTO> buildEligibleRecipients(String projectId) {
+        return collectProjectContributors(projectId).values().stream().map(user -> {
+            UserSummaryDTO summary = new UserSummaryDTO();
+            summary.setId(user.getId());
+            summary.setName(user.getName());
+            summary.setEmail(user.getEmail());
+            summary.setUsername(user.getUsername());
+            summary.setRole(user.getRole() == null ? null : user.getRole().name());
+            summary.setProfileImage(user.getProfileImage());
+            summary.setTeam(user.getTeam());
+            return summary;
+        }).toList();
     }
 
     private FinanceDistributionDTO mapDistribution(FinanceDistribution distribution) {

@@ -18,6 +18,7 @@ public class FinanceRequestDTO {
     private LocalDateTime paidAt;
     private LocalDateTime distributedAt;
     private LocalDateTime createdAt;
+    private List<UserSummaryDTO> eligibleRecipients;
     private List<FinanceDistributionDTO> distributions;
 
     public String getId() {
@@ -122,6 +123,14 @@ public class FinanceRequestDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public List<UserSummaryDTO> getEligibleRecipients() {
+        return eligibleRecipients;
+    }
+
+    public void setEligibleRecipients(List<UserSummaryDTO> eligibleRecipients) {
+        this.eligibleRecipients = eligibleRecipients;
     }
 
     public List<FinanceDistributionDTO> getDistributions() {

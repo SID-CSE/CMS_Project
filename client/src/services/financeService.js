@@ -63,8 +63,13 @@ function mapRequestsForCards(requests) {
     id: request.id,
     title: request.projectTitle || 'Project request',
     amount: Number(request.totalAmount || 0),
+    totalAmount: Number(request.totalAmount || 0),
+    companyProfitAmount: Number(request.companyProfitAmount || 0),
+    workerPoolAmount: Number(request.workerPoolAmount || 0),
     from: request.stakeholderName || '-',
+    rawStatus: (request.status || 'SENT').toString().toUpperCase(),
     status: normalizeStatus(request.status),
+    eligibleRecipients: Array.isArray(request.eligibleRecipients) ? request.eligibleRecipients : [],
     projectId: request.projectId,
   }));
 }
@@ -191,7 +196,11 @@ export async function updateFinanceRequest(role, requestId, patch) {
   }
 
   if (role === 'admin' && patch?.status === 'paid') {
-    await apiClient.patch(`/admin/finance-requests/${requestId}/distribute`, {});
+    const body = {
+      companyProfitAmount: patch?.companyProfitAmount,
+      employeeShares: Array.isArray(patch?.employeeShares) ? patch.employeeShares : [],
+    };
+    await apiClient.patch(`/admin/finance-requests/${requestId}/distribute`, body);
     return getFinanceState(role);
   }
 

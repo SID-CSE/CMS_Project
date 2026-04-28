@@ -322,7 +322,13 @@ When adding features:
 - **React/Spring questions**: See `server/API_DOCUMENTATION.md`
 - **PHP questions**: See `php_project/README.md` and `php_project/HELP.md`
 - **Database issues**: Check migration files in `php_project/migrations/`
-```
+
+## Repository Hygiene
+
+- Keep real secrets only in local `.env` files.
+- Keep `.env.example` files template-only.
+- Keep local credential notes in ignored files (for example, `Credentials.txt`).
+- Do not commit generated debug snapshots or local upload artifacts.
 
 ## Local Setup
 

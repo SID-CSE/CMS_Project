@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../../components/Navbar/AdminNavbar";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
 import { useAuth } from "../../context/AuthContext";
@@ -28,6 +29,7 @@ const getTaskStatusColor = (status) => {
 
 export default function AdminProjects() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const navigate = useNavigate();
   const { userId } = useAuth();
   const [projects, setProjects] = React.useState([]);
   const [expandedProject, setExpandedProject] = React.useState(null);
@@ -110,8 +112,16 @@ export default function AdminProjects() {
             <section className="space-y-4">
               {projects.map((project) => (
                 <article key={project.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleExpandProject(project.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleExpandProject(project.id);
+                      }
+                    }}
                     className="w-full p-6 text-left hover:bg-slate-50 transition-colors flex items-center justify-between"
                   >
                     <div className="flex-1">
@@ -120,6 +130,16 @@ export default function AdminProjects() {
                       <p className="mt-2 line-clamp-1 text-sm text-slate-600">{project.description}</p>
                     </div>
                     <div className="ml-4 flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/admin/projects/${project.id}`);
+                        }}
+                        className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                      >
+                        Open workflow
+                      </button>
                       <select
                         value={project.status}
                         onChange={(event) => handleUpdateStatus(project.id, event.target.value)}
@@ -136,10 +156,20 @@ export default function AdminProjects() {
                         ))}
                       </select>
                     </div>
-                  </button>
+                  </div>
 
                   {expandedProject === project.id && (
                     <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                      <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <p className="text-sm text-slate-600">Task assignment is available in the project workflow page.</p>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/projects/${project.id}`)}
+                          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                        >
+                          Assign task
+                        </button>
+                      </div>
                       {taskLoading[project.id] ? (
                         <p className="text-sm text-slate-500">Loading tasks...</p>
                       ) : projectTasks[project.id]?.length === 0 ? (

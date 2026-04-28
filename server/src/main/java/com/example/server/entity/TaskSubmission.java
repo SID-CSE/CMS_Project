@@ -1,8 +1,16 @@
 package com.example.server.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "task_submissions")
@@ -28,6 +36,9 @@ public class TaskSubmission {
 
     @Column(name = "s3_key")
     private String s3Key;
+
+    @Column(name = "public_id")
+    private String publicId;
 
     @Column(name = "cdn_url")
     private String cdnUrl;
@@ -63,21 +74,6 @@ public class TaskSubmission {
     private LocalDateTime createdAt;
 
     public TaskSubmission() {
-    }
-
-    public TaskSubmission(String id, String taskId, Task task, String submittedBy, User submitter, String s3Key, String cdnUrl, String fileType, Integer versionNumber, LocalDateTime submittedAt, String adminReviewNote, LocalDateTime createdAt) {
-        this.id = id;
-        this.taskId = taskId;
-        this.task = task;
-        this.submittedBy = submittedBy;
-        this.submitter = submitter;
-        this.s3Key = s3Key;
-        this.cdnUrl = cdnUrl;
-        this.fileType = fileType;
-        this.versionNumber = versionNumber;
-        this.submittedAt = submittedAt;
-        this.adminReviewNote = adminReviewNote;
-        this.createdAt = createdAt;
     }
 
     public String getId() {
@@ -126,6 +122,14 @@ public class TaskSubmission {
 
     public void setS3Key(String s3Key) {
         this.s3Key = s3Key;
+    }
+
+    public String getPublicId() {
+        return publicId;
+    }
+
+    public void setPublicId(String publicId) {
+        this.publicId = publicId;
     }
 
     public String getCdnUrl() {
@@ -221,6 +225,9 @@ public class TaskSubmission {
         this.id = UUID.randomUUID().toString();
         this.submittedAt = LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
+        if (this.publicId == null || this.publicId.isBlank()) {
+            this.publicId = (this.s3Key != null && !this.s3Key.isBlank()) ? this.s3Key : UUID.randomUUID().toString();
+        }
         if (this.status == null) {
             this.status = "SUBMITTED";
         }

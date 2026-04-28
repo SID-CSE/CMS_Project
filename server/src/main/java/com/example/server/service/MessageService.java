@@ -48,20 +48,23 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageThreadDTO> getInbox(String currentUserId) {
-        List<Message> messages = messageRepository.findBySenderIdOrRecipientIdOrderByCreatedAtDesc(currentUserId, currentUserId);
+        String resolvedCurrentUserId = resolveUserId(currentUserId);
+        List<Message> messages = messageRepository.findBySenderIdOrRecipientIdOrderByCreatedAtDesc(resolvedCurrentUserId, resolvedCurrentUserId);
         Map<String, List<Message>> grouped = messages.stream()
-                .collect(Collectors.groupingBy(message -> threadKey(currentUserId, message), LinkedHashMap::new, Collectors.toList()));
+            .collect(Collectors.groupingBy(message -> threadKey(resolvedCurrentUserId, message), LinkedHashMap::new, Collectors.toList()));
 
         return grouped.values().stream()
-                .map(group -> buildThread(currentUserId, group))
+            .map(group -> buildThread(resolvedCurrentUserId, group))
                 .sorted(Comparator.comparing(MessageThreadDTO::getLastMessageAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<MessageDTO> getThread(String currentUserId, String counterpartId, String projectId) {
-        validateParticipant(currentUserId, counterpartId);
-        return getThreadEntities(currentUserId, counterpartId, projectId).stream()
+        String resolvedCurrentUserId = resolveUserId(currentUserId);
+        String resolvedCounterpartId = resolveUserId(counterpartId);
+        validateParticipant(resolvedCurrentUserId, resolvedCounterpartId);
+        return getThreadEntities(resolvedCurrentUserId, resolvedCounterpartId, projectId).stream()
                 .map(message -> mapMessage(message, resolveProjectTitle(message.getProjectId())))
                 .toList();
     }
@@ -75,12 +78,14 @@ public class MessageService {
             throw new RuntimeException("Message body is required");
         }
 
-        validateParticipant(currentUserId, dto.getRecipientId());
+        String resolvedCurrentUserId = resolveUserId(currentUserId);
+        String resolvedRecipientId = resolveUserId(dto.getRecipientId());
+        validateParticipant(resolvedCurrentUserId, resolvedRecipientId);
         String projectId = resolveProjectId(dto.getProjectId(), dto.getTaskId());
 
         Message message = new Message();
-        message.setSenderId(currentUserId);
-        message.setRecipientId(dto.getRecipientId());
+        message.setSenderId(resolvedCurrentUserId);
+        message.setRecipientId(resolvedRecipientId);
         message.setProjectId(projectId);
         message.setTaskId(dto.getTaskId());
         message.setBody(dto.getBody().trim());
@@ -88,8 +93,8 @@ public class MessageService {
 
         Message saved = messageRepository.save(message);
 
-        User sender = resolveUser(currentUserId);
-        User recipient = resolveUser(dto.getRecipientId());
+        User sender = resolveUser(resolvedCurrentUserId);
+        User recipient = resolveUser(resolvedRecipientId);
         String relatedEntityId = projectId != null && !projectId.isBlank() ? projectId : saved.getId();
         notificationService.createNotification(
             recipient.getId(),
@@ -104,10 +109,12 @@ public class MessageService {
 
     @Transactional
     public void markThreadRead(String currentUserId, String counterpartId, String projectId) {
-        validateParticipant(currentUserId, counterpartId);
-        List<Message> thread = getThreadEntities(currentUserId, counterpartId, projectId);
+        String resolvedCurrentUserId = resolveUserId(currentUserId);
+        String resolvedCounterpartId = resolveUserId(counterpartId);
+        validateParticipant(resolvedCurrentUserId, resolvedCounterpartId);
+        List<Message> thread = getThreadEntities(resolvedCurrentUserId, resolvedCounterpartId, projectId);
         thread.stream()
-                .filter(message -> Objects.equals(message.getRecipientId(), currentUserId) && !Boolean.TRUE.equals(message.getIsRead()))
+            .filter(message -> Objects.equals(message.getRecipientId(), resolvedCurrentUserId) && !Boolean.TRUE.equals(message.getIsRead()))
                 .forEach(message -> {
                     message.setIsRead(true);
                     message.setReadAt(LocalDateTime.now());
@@ -117,8 +124,9 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<UserSummaryDTO> getContacts(String currentUserId, String roleFilter) {
+        String resolvedCurrentUserId = resolveUserId(currentUserId);
         return userRepository.findAll().stream()
-                .filter(user -> !Objects.equals(user.getId(), currentUserId))
+            .filter(user -> !Objects.equals(user.getId(), resolvedCurrentUserId))
                 .filter(user -> user.getIsActive() == null || Boolean.TRUE.equals(user.getIsActive()))
                 .filter(user -> roleFilter == null || roleFilter.isBlank() || matchesRole(user, roleFilter))
                 .map(this::mapUser)
@@ -200,8 +208,22 @@ public class MessageService {
     }
 
     private User resolveUser(String userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        String resolvedUserId = resolveUserId(userId);
+        return userRepository.findById(resolvedUserId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + resolvedUserId));
+    }
+
+    private String resolveUserId(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new RuntimeException("User identifier is required");
+        }
+
+        String value = identifier.trim();
+        return userRepository.findById(value)
+                .or(() -> userRepository.findByEmail(value.toLowerCase()))
+                .or(() -> userRepository.findByUsername(value))
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + value));
     }
 
     private UserSummaryDTO mapUser(User user) {

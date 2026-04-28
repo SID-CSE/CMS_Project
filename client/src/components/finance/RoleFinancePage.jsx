@@ -87,7 +87,10 @@ export default function RoleFinancePage({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [method, setMethod] = useState("Direct");
-  const [requestNote, setRequestNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [distributionDrafts, setDistributionDrafts] = useState({});
 
   const stats = state.stats || {};
   const transactions = state.transactions || [];
@@ -103,19 +106,159 @@ export default function RoleFinancePage({
     ];
   }, [stats, requests, primaryActionHint]);
 
+  const dashboardPath = useMemo(() => {
+    if (roleKey === "stakeholder") return "/stakeholder/home";
+    return `${basePath}/dashboard`;
+  }, [basePath, roleKey]);
+
+  const selectedAmount = Number(amount || 0);
+  const canCreate = allowCreate && selectedAmount > 0 && selectedCounterparty;
+
   const handleCreate = async () => {
+    setError("");
+    setSuccess("");
     if (!allowCreate) return;
-    if (!amount || !selectedCounterparty) return;
-    await onCreateTransaction?.({
-      to: selectedCounterparty,
-      amount: Number(amount),
-      description: description || primaryActionLabel,
-      method,
-      status: roleKey === "stakeholder" ? "paid" : "pending",
-      paid_amount: roleKey === "stakeholder" ? Number(amount) : 0,
+    if (!selectedCounterparty) {
+      setError("Select a counterparty before creating a transaction.");
+      return;
+    }
+    if (!(selectedAmount > 0)) {
+      setError("Enter an amount greater than zero.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await onCreateTransaction?.({
+        to: selectedCounterparty,
+        amount: selectedAmount,
+        description: description || primaryActionLabel,
+        method,
+        status: roleKey === "stakeholder" ? "paid" : "pending",
+        paid_amount: roleKey === "stakeholder" ? selectedAmount : 0,
+      });
+      setAmount("");
+      setDescription("");
+      setSuccess("Finance request created successfully.");
+    } catch (createError) {
+      setError(createError?.message || "Failed to create transaction.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRequestAction = async (requestId, patch) => {
+    setError("");
+    setSuccess("");
+    setBusy(true);
+    try {
+      await onUpdateRequest?.(requestId, patch);
+      setSuccess("Finance request updated.");
+    } catch (updateError) {
+      setError(updateError?.message || "Failed to update request.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const getDraft = (request) => {
+    const existing = distributionDrafts[request.id];
+    if (existing) return existing;
+    return {
+      companyProfitAmount: String(request.companyProfitAmount ?? 0),
+      selectedRecipientId: request.eligibleRecipients?.[0]?.id || "",
+      selectedAmount: "",
+      shares: {},
+    };
+  };
+
+  const setDraft = (requestId, nextDraft) => {
+    setDistributionDrafts((prev) => ({ ...prev, [requestId]: nextDraft }));
+  };
+
+  const addShareToDraft = (request) => {
+    const draft = getDraft(request);
+    const amountNumber = Number(draft.selectedAmount || 0);
+    if (!draft.selectedRecipientId) {
+      setError("Select an employee before adding a share.");
+      return;
+    }
+    if (!(amountNumber > 0)) {
+      setError("Share amount must be greater than zero.");
+      return;
+    }
+    setError("");
+    setDraft(request.id, {
+      ...draft,
+      shares: {
+        ...draft.shares,
+        [draft.selectedRecipientId]: amountNumber,
+      },
+      selectedAmount: "",
     });
-    setAmount("");
-    setDescription("");
+  };
+
+  const removeShareFromDraft = (requestId, recipientId) => {
+    const draft = distributionDrafts[requestId];
+    if (!draft) return;
+    const nextShares = { ...draft.shares };
+    delete nextShares[recipientId];
+    setDraft(requestId, { ...draft, shares: nextShares });
+  };
+
+  const handleAdminDistribute = async (request) => {
+    const draft = getDraft(request);
+    const companyProfitAmount = Number(draft.companyProfitAmount || 0);
+    const employeeShares = Object.entries(draft.shares || {}).map(([recipientUserId, amount]) => ({
+      recipientUserId,
+      amount: Number(amount),
+    }));
+
+    if (!(companyProfitAmount >= 0)) {
+      setError("Company amount cannot be negative.");
+      return;
+    }
+
+    if (!employeeShares.length) {
+      setError("Add at least one employee payout before distribution.");
+      return;
+    }
+
+    const sharesTotal = employeeShares.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const expectedWorkerPool = Number(request.totalAmount || 0) - companyProfitAmount;
+    if (Math.abs(sharesTotal - expectedWorkerPool) > 0.009) {
+      setError(`Employee payout total must match worker pool (₹${expectedWorkerPool.toFixed(2)}).`);
+      return;
+    }
+
+    await handleRequestAction(request.id, {
+      status: "paid",
+      companyProfitAmount,
+      employeeShares,
+    });
+  };
+
+  const exportTransactions = () => {
+    const headers = ["date", "description", "counterparty", "amount", "status", "method"];
+    const rows = transactions.map((tx) => [
+      tx.date || "",
+      tx.description || "",
+      tx.to || tx.from || "",
+      tx.amount || 0,
+      tx.status || "",
+      tx.method || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${roleKey}-finance-transactions.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -130,20 +273,24 @@ export default function RoleFinancePage({
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to={basePath} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <Link to={dashboardPath} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
               Back to Dashboard
             </Link>
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={!allowCreate}
-              className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              <span className="mr-2">{icons.plus}</span>
-              {primaryActionLabel}
-            </button>
+            {allowCreate ? (
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={!canCreate || busy}
+                className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="mr-2">{icons.plus}</span>
+                {busy ? "Processing..." : primaryActionLabel}
+              </button>
+            ) : null}
           </div>
         </div>
+        {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+        {success ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</div> : null}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -194,7 +341,11 @@ export default function RoleFinancePage({
               <h2 className="text-lg font-semibold text-slate-900">Transactions</h2>
               <p className="mt-1 text-sm text-slate-500">Payments, invoices, and transfers for {roleLabel.toLowerCase()}.</p>
             </div>
-            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={exportTransactions}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
               {icons.download}
               Export report
             </button>
@@ -212,7 +363,11 @@ export default function RoleFinancePage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {transactions.map((tx) => (
+                {!transactions.length ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-500">No transactions yet.</td>
+                  </tr>
+                ) : transactions.map((tx) => (
                   <tr key={tx.id}>
                     <td className="px-4 py-3 text-sm text-slate-600">{tx.date}</td>
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">{tx.description}</td>
@@ -231,7 +386,8 @@ export default function RoleFinancePage({
             <h2 className="text-lg font-semibold text-slate-900">{primaryActionLabel}</h2>
             <p className="mt-1 text-sm text-slate-500">{primaryActionHint}</p>
 
-            <div className="mt-4 space-y-3">
+            {allowCreate ? (
+              <div className="mt-4 space-y-3">
               <label className="block text-sm font-medium text-slate-700">Counterparty</label>
               <select value={selectedCounterparty} onChange={(e) => setSelectedCounterparty(e.target.value)} className="h-11 w-full rounded-xl border border-slate-300 px-3 text-sm text-slate-700 outline-none">
                 {counterparties.map((counterparty) => (
@@ -252,13 +408,27 @@ export default function RoleFinancePage({
                 <option>Invoice</option>
                 <option>Cash</option>
               </select>
-            </div>
+
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={!canCreate || busy}
+                  className="mt-2 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {busy ? "Processing..." : primaryActionLabel}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                This role cannot create direct transactions. Use the Requests section below to complete pending actions.
+              </div>
+            )}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Requests</h2>
             <div className="mt-4 space-y-3">
-              {requests.map((request) => (
+              {!requests.length ? <p className="text-sm text-slate-500">No finance requests pending.</p> : requests.map((request) => (
                 <div key={request.id} className="rounded-xl bg-slate-50 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -268,24 +438,84 @@ export default function RoleFinancePage({
                     <Badge tone={request.status === "paid" ? "emerald" : "amber"}>{request.status}</Badge>
                   </div>
                   <div className="mt-3 flex gap-2">
-                    {request.status === "pending" && roleKey === "admin" && (
-                      <button
-                        type="button"
-                        onClick={async () => onUpdateRequest?.(request.id, { status: "paid" })}
-                        className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white"
-                      >
-                        Distribute
-                      </button>
+                    {request.rawStatus === "PAID" && roleKey === "admin" && (
+                      <div className="w-full space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Custom distribution</p>
+                        <div className="grid gap-2 md:grid-cols-[1fr_150px_auto]">
+                          <select
+                            value={getDraft(request).selectedRecipientId}
+                            onChange={(e) => setDraft(request.id, { ...getDraft(request), selectedRecipientId: e.target.value })}
+                            className="h-10 rounded-lg border border-slate-300 px-3 text-xs text-slate-700"
+                          >
+                            <option value="">Select employee name</option>
+                            {(request.eligibleRecipients || []).map((recipient) => {
+                              const displayName = recipient.name || recipient.username || "Unnamed employee";
+                              return (
+                                <option key={recipient.id} value={recipient.id}>
+                                  {displayName}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <input
+                            value={getDraft(request).selectedAmount}
+                            onChange={(e) => setDraft(request.id, { ...getDraft(request), selectedAmount: e.target.value })}
+                            placeholder="Amount"
+                            className="h-10 rounded-lg border border-slate-300 px-3 text-xs text-slate-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => addShareToDraft(request)}
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700"
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        <label className="block text-xs font-medium text-slate-700">Company share</label>
+                        <input
+                          value={getDraft(request).companyProfitAmount}
+                          onChange={(e) => setDraft(request.id, { ...getDraft(request), companyProfitAmount: e.target.value })}
+                          className="h-10 w-full rounded-lg border border-slate-300 px-3 text-xs text-slate-700"
+                        />
+
+                        <div className="space-y-1">
+                          {Object.entries(getDraft(request).shares || {}).map(([recipientId, shareAmount]) => {
+                            const recipient = (request.eligibleRecipients || []).find((item) => item.id === recipientId);
+                            return (
+                              <div key={recipientId} className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-700">
+                                <span>{recipient?.name || recipient?.username || "Unnamed employee"} - ₹{Number(shareAmount).toFixed(2)}</span>
+                                <button type="button" onClick={() => removeShareFromDraft(request.id, recipientId)} className="text-red-600">Remove</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={async () => handleAdminDistribute(request)}
+                          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Distribute
+                        </button>
+                      </div>
                     )}
-                    {request.status === "pending" && roleKey === "stakeholder" && (
+                    {request.rawStatus === "SENT" && roleKey === "stakeholder" && (
                       <button
                         type="button"
-                        onClick={async () => onUpdateRequest?.(request.id, { status: "paid" })}
-                        className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white"
+                        disabled={busy}
+                        onClick={async () => handleRequestAction(request.id, { status: "paid" })}
+                        className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Pay Now
                       </button>
                     )}
+                    {request.rawStatus === "SENT" && roleKey === "admin" ? (
+                      <span className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                        Waiting for stakeholder payment
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -295,7 +525,7 @@ export default function RoleFinancePage({
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Expenses</h2>
             <div className="mt-4 space-y-3">
-              {expenses.map((expense) => (
+              {!expenses.length ? <p className="text-sm text-slate-500">No expense entries yet.</p> : expenses.map((expense) => (
                 <div key={expense.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>

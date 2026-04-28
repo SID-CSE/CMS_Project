@@ -144,10 +144,13 @@ cd php_project/migrations
 
 # Run migrations in order
 mysql -u root -p contify_php < 001_create_users.sql
-mysql -u root -p contify_php < 002_create_projects.sql
-mysql -u root -p contify_php < 003_create_tasks.sql
-mysql -u root -p contify_php < 004_create_messages.sql
-mysql -u root -p contify_php < 005_create_notifications.sql
+mysql -u root -p contify_php < 002_create_project_requests.sql
+mysql -u root -p contify_php < 003_create_project_tasks.sql
+mysql -u root -p contify_php < 004_create_notifications.sql
+mysql -u root -p contify_php < 005_create_message_threads.sql
+mysql -u root -p contify_php < 006_create_messages.sql
+mysql -u root -p contify_php < 007_create_task_attachments.sql
+mysql -u root -p contify_php < 008_add_cloud_fields_to_task_attachments.sql
 # ... run any additional migration files
 ```
 
@@ -213,15 +216,12 @@ http://localhost:8000
 
 ### Login Credentials
 
-After running migrations, test with these default users (seed data if available):
+No live credentials are stored in this repository.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@example.com | password123 |
-| Editor | editor@example.com | password123 |
-| Stakeholder | stakeholder@example.com | password123 |
-
-**Note:** If no seed data, manually insert test users into database or use signup page.
+Use one of these options for local testing:
+- Register users from the signup flow for each role.
+- Insert your own local test users directly in MySQL.
+- Keep any local credential notes in ignored files only (for example, `Credentials.txt`).
 
 ### Stop the Server
 

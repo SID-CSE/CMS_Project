@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,32 +94,40 @@ public class ProjectService {
     public ProjectPlanResponseDTO createProjectPlan(String projectId, String adminId, CreateProjectPlanDTO dto) {
         log.info("Creating project plan for project: {} by admin: {}", projectId, adminId);
 
-        // Verify project exists and is in REQUESTED status
+        // Verify project exists
         ProjectRequest project = projectRequestRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
 
-        if (!project.getStatus().equals(ProjectRequest.ProjectStatus.REQUESTED)) {
-            throw new RuntimeException("Project must be in REQUESTED status to create a plan");
+        if (project.getStatus() == ProjectRequest.ProjectStatus.SIGNED_OFF) {
+            throw new RuntimeException("Cannot update proposal after project is signed off");
         }
 
         // Verify admin exists
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found with id: " + adminId));
+        User admin = validateAdmin(adminId);
+        String resolvedAdminId = admin.getId();
 
-        // Create project plan
-        ProjectPlan plan = new ProjectPlan();
-        plan.setProjectId(projectId);
-        plan.setProject(project);
-        plan.setCreatedBy(adminId);
-        plan.setAdmin(admin);
+        Optional<ProjectPlan> existingPlan = getLatestProjectPlan(projectId);
+
+        // Upsert plan so Admin "Create / Update Proposal" does what UI promises.
+        ProjectPlan plan = existingPlan.orElseGet(ProjectPlan::new);
+        if (existingPlan.isEmpty()) {
+            plan.setProjectId(projectId);
+            plan.setProject(project);
+            plan.setCreatedBy(resolvedAdminId);
+            plan.setAdmin(admin);
+        }
+
         plan.setTimelineStart(dto.getTimelineStart());
         plan.setTimelineEnd(dto.getTimelineEnd());
         plan.setNotes(dto.getNotes());
 
         ProjectPlan savedPlan = projectPlanRepository.save(plan);
-        log.info("Project plan created with id: {}", savedPlan.getId());
 
-        // Create milestones
+        List<PlanMilestone> existingMilestones = planMilestoneRepository.findByPlanIdOrderByOrderIndex(savedPlan.getId());
+        if (!existingMilestones.isEmpty()) {
+            planMilestoneRepository.deleteAll(existingMilestones);
+        }
+
         List<PlanMilestone> milestones = dto.getMilestones().stream()
                 .map(m -> {
                     PlanMilestone milestone = new PlanMilestone();
@@ -133,6 +142,8 @@ public class ProjectService {
 
         planMilestoneRepository.saveAll(milestones);
         savedPlan.setMilestones(milestones);
+
+            log.info("Project plan {} with id: {}", existingPlan.isPresent() ? "updated" : "created", savedPlan.getId());
         
         log.info("Created {} milestones for plan: {}", milestones.size(), savedPlan.getId());
 
@@ -147,8 +158,7 @@ public class ProjectService {
         ProjectRequest project = projectRequestRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
 
-        ProjectPlan plan = projectPlanRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new RuntimeException("Plan not found for project: " + projectId));
+        ProjectPlan plan = getLatestProjectPlanOrThrow(projectId);
 
         // Update plan sent_at timestamp
         plan.setSentAt(LocalDateTime.now());
@@ -182,8 +192,7 @@ public class ProjectService {
             throw new RuntimeException("Project must be in PLAN_SENT status to accept plan");
         }
 
-        ProjectPlan plan = projectPlanRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new RuntimeException("Plan not found for project: " + projectId));
+        ProjectPlan plan = getLatestProjectPlanOrThrow(projectId);
 
         // Update statuses
         plan.setAcceptedAt(LocalDateTime.now());
@@ -216,8 +225,7 @@ public class ProjectService {
             throw new RuntimeException("Project must be in PLAN_SENT status to request changes");
         }
 
-        ProjectPlan plan = projectPlanRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new RuntimeException("Plan not found for project: " + projectId));
+        ProjectPlan plan = getLatestProjectPlanOrThrow(projectId);
 
         // Store client feedback
         plan.setClientFeedback(dto.getFeedback());
@@ -271,8 +279,7 @@ public class ProjectService {
             throw new RuntimeException("Unauthorized: You are not the client for this project");
         }
 
-        ProjectPlan plan = projectPlanRepository.findByProjectId(projectId)
-                .orElseThrow(() -> new RuntimeException("Plan not found for project: " + projectId));
+        ProjectPlan plan = getLatestProjectPlanOrThrow(projectId);
 
         return mapPlanToResponseDTO(plan);
     }
@@ -283,11 +290,7 @@ public class ProjectService {
         ProjectRequest project = projectRequestRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
 
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found with id: " + adminId));
-        if (admin.getRole() != User.UserRole.ADMIN) {
-            throw new RuntimeException("Only admins can create tasks");
-        }
+        validateAdmin(adminId);
 
         User editor = userRepository.findById(dto.getAssignedTo())
                 .orElseThrow(() -> new RuntimeException("Editor not found with id: " + dto.getAssignedTo()));
@@ -377,11 +380,12 @@ public class ProjectService {
     }
 
     public TaskStreamUrlResponseDTO getStakeholderStreamUrl(String taskId, String stakeholderId) {
+        String resolvedStakeholderId = resolveUserId(stakeholderId);
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
 
         ProjectRequest project = task.getProject();
-        if (project == null || !project.getClientId().equals(stakeholderId)) {
+        if (project == null || !project.getClientId().equals(resolvedStakeholderId)) {
             throw new RuntimeException("Unauthorized: You are not the stakeholder for this task");
         }
 
@@ -481,6 +485,7 @@ public class ProjectService {
         submission.setCdnUrl(dto.getCdnUrl());
         submission.setFileType(dto.getFileType());
         submission.setS3Key(dto.getS3Key());
+        submission.setPublicId((dto.getS3Key() != null && !dto.getS3Key().isBlank()) ? dto.getS3Key() : null);
         submission.setVersionNumber(nextVersion);
         submission.setStatus("SUBMITTED");
         submission.setStakeholderVisible(false);
@@ -497,11 +502,7 @@ public class ProjectService {
     // ===== STAGE 6: ADMIN REVIEWS SUBMISSION =====
     @Transactional
     public TaskResponseDTO reviewTask(String taskId, String adminId, ReviewTaskSubmissionDTO dto) {
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin not found with id: " + adminId));
-        if (admin.getRole() != User.UserRole.ADMIN) {
-            throw new RuntimeException("Only admins can review submissions");
-        }
+        validateAdmin(adminId);
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
@@ -777,12 +778,22 @@ public class ProjectService {
     }
 
     private User validateAdmin(String adminId) {
-        User admin = userRepository.findById(adminId)
+        String resolvedAdminId = resolveUserId(adminId);
+        User admin = userRepository.findById(resolvedAdminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found with id: " + adminId));
         if (admin.getRole() != User.UserRole.ADMIN) {
             throw new RuntimeException("Only admins can perform this action");
         }
         return admin;
+    }
+
+    private String resolveUserId(String identifier) {
+        String value = identifier == null ? "" : identifier.trim();
+        return userRepository.findById(value)
+                .or(() -> userRepository.findByEmail(value.toLowerCase()))
+                .or(() -> userRepository.findByUsername(value))
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + identifier));
     }
 
     @Transactional
@@ -843,7 +854,7 @@ public class ProjectService {
     }
 
     private void notifyAdminPlanAccepted(ProjectRequest project) {
-        ProjectPlan plan = projectPlanRepository.findByProjectId(project.getId()).orElse(null);
+        ProjectPlan plan = getLatestProjectPlan(project.getId()).orElse(null);
         if (plan != null) {
             Notification notification = new Notification();
             notification.setUserId(plan.getCreatedBy());
@@ -858,7 +869,7 @@ public class ProjectService {
     }
 
     private void notifyAdminRequestChanges(ProjectRequest project) {
-        ProjectPlan plan = projectPlanRepository.findByProjectId(project.getId()).orElse(null);
+        ProjectPlan plan = getLatestProjectPlan(project.getId()).orElse(null);
         if (plan != null) {
             Notification notification = new Notification();
             notification.setUserId(plan.getCreatedBy());
@@ -906,6 +917,19 @@ public class ProjectService {
         notification.setMessage("Admin reviewed task: " + task.getTitle() + " (" + task.getStatus().name() + ")");
         notification.setRelatedEntityId(task.getId());
         notificationRepository.save(notification);
+    }
+
+    private Optional<ProjectPlan> getLatestProjectPlan(String projectId) {
+        List<ProjectPlan> plans = projectPlanRepository.findAllByProjectIdOrderByCreatedAtDesc(projectId);
+        if (plans.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(plans.get(0));
+    }
+
+    private ProjectPlan getLatestProjectPlanOrThrow(String projectId) {
+        return getLatestProjectPlan(projectId)
+                .orElseThrow(() -> new RuntimeException("Plan not found for project: " + projectId));
     }
 
     private void notifyStakeholderDeliveryReady(ProjectRequest project) {
